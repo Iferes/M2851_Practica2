@@ -1,6 +1,6 @@
 ---
-title: "Tipología y ciclo de vida de los datos: Práctica 2"
-subtitle: "Limpieza y validación de los datos"
+title: "Tipología y ciclo de vida de los datos"
+subtitle: "Práctica 2: Limpieza y validación de los datos"
 author: ' Autores: César Fernández Domínguez, Isabel Fernández Esparza'
 date: "Junio 2019"
 output:
