@@ -1,5 +1,6 @@
 ---
-title: "Práctica 2: Limpieza y validación de los datos"
+title: "Tipología y ciclo de vida de los datos: Práctica 2"
+subtitle: "Limpieza y validación de los datos"
 author: ' Autores: César Fernández Domínguez, Isabel Fernández Esparza'
 date: "Junio 2019"
 output:
@@ -21,53 +22,342 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(eval=T, echo=T)
 ```
+```{r load_libraries, include=FALSE}
+library(knitr)
+library(lubridate)
+library(stringr)
+library(dplyr)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(plyr)
+library(cowplot)
+library(colorspace)
+library(mlbench)
+library(caret)
+```
+
 ******
 # Solución
 ******
 
 ## Descripción del dataset
 
+Para la realización de esta práctica se ha seleccionado un conjunto de datos relacionado con resultados académicos de estudiantes de dos colegios de Portugal disponible en el repositorio de datos *kaggle*. En concreto este conjunto de datos se ha obtenido del enlace: https://www.kaggle.com/uciml/student-alcohol-consumption
+
 Este dataset contiene información de estudiantes de matemáticas en edad de estudios secundarios. Se puede utilizar para analizar cómo afectan a los estudiantes de secundaria sus circunstancias personales a la hora de tener voluntad de continuar con estudios de mayor nivel. Estas circunstancias personales podemos entenderlas desde el punto de vista de: nivel de estudios de los padres, trabajo de los padres, si tienen pareja o no...
 Por otro lado, también se podría hacer un análisis para estudiar la relación entre el número de suspensos de los estudiantes y el nivel de estudio de los padres, la distancia de los alumnos a los colegios, cómo influye el hecho de disponer de ayuda extraescolar en los resultados escolares, el tiempo de estudio semanal, el consumo de alcohol tanto diario como semanal, el número de ausencias...
 
+Este conjunto de datos se presenta en dos ficheros distintos, en formato CSV: student-mad.csv (asignatura de matemáticas) y student-por.csv (asignatura de portugues), uno por cada asignatura.
+
 El objetivo de esta práctica es limpiar los datos, unificarlos y poder estimar un modelo que pueda predecir el número de suspensos de un estudiante de matemáticas atendiendo a los factores anteriormente descritos. Teniendo en cuenta que en el juego de datos tenemos información de dos colegios diferentes podemos también intentar analizar si las predicciones realizadas están también sesgadas por el colegio al que pertenezcan los alumnos o por el sexo.
 
-## Limpieza de datos
+A continuación, se presenta una descripción de los atributos, para cada estudiante, contenidos en los dos ficheros:
 
-El fichero de datos contiene 396 registros y 33 variables. Las variables de las que disponemos son:
+ 1. school - colegio al que pertenece el alumno (binario: 'GP' - Gabriel Pereira o 'MS' - Mousinho da Silveira)
+ 2. sex - sexo (binario: 'F' - mujer o 'M' - hombre)
+ 3. age - edad (numérico: entre 15 y 22 años)
+ 4. address - tipo de residencia (binario: 'U' - urbana o 'R' - rural)
+ 5. famsize - tamaño de la familia (binario: 'LE3' - menor o igual a 3 o 'GT3' - mayor que 3)
+ 6. Pstatus - padres separados o no (binario: 'T' - viven juntos o 'A' - separados)
+ 7. Medu - nivel educativo de la madre (numérico: 0 - ninguno, 1 - educación primaria (4º grado), 2 – entre 5º a 9º grado, 3 – educación secundaria o 4 – educación superior)
+ 8. Fedu - nivel educativo del padre (numérico: 0 - ninguno, 1 - educación primaria (4º grado), 2 – entre 5º a 9º grado, 3 – educación secundaria o 4 – educación superior)
+ 9. Mjob - trabajo de la madre (nominal: 'teacher', 'health' care related, civil 'services' (p.e. administrativa o policía), 'at_home' o 'other')
+10. Fjob - trabajo del padre (nominal: 'teacher', 'health' care related, civil 'services' (p.e. administrativa o policía), 'at_home' o 'other')
+11. reason - razón para elegir la escuela (nominal: cerca de 'home', school 'reputation', 'course' preferencia o 'other')
+12. guardian - guardian del estudiante (nominal: 'mother', 'father' o 'other')
+13. traveltime - tiempo de viaje desde casa a la escuela (numérico: 1 - <15 min., 2 - 15 a 30 min., 3 - 30 min. a 1 hour, o 4 - >1 hora)
+14. studytime - tiempo de estudio semanal (numérico: 1 - <2 horas, 2 - 2 a 5 horas, 3 - 5 a 10 horas, o 4 - >10 horas)
+15. failures - número de asignaturas suspensas (numérico: n si 1<=n<3, en cualquier otro caso 4)
+16. schoolsup - apoyo educativo adicional (binario: yes o no)
+17. famsup - ayuda educativa de la familia (binario: yes o no)
+18. paid - clases privadas de las asignaturas (Matemáticas o Portugues) (binario: yes o no)
+19. activities - actividades extra-escolares (binario: yes o no)
+20. nursery - asistió a la guardería (binario: yes o no)
+21. higher - el alumno quiere realizar estudios superiores (binario: yes o no)
+22. internet - el alumno tiene Internet en casa (binario: yes o no)
+23. romantic - el alumno tiene pareja o no (binario: yes o no)
+24. famrel - calidad de la relación familiar (numérico: desde 1 - muy mal a 5 - excelente)
+25. freetime - tiempo libre después de la escuela (numérico: desde 1 - muy poco a 5 - mucho)
+26. goout - el alumno sale con amigo (numérico: desde 1 - muy poco a 5 - mucho)
+27. Dalc - consumo de alcohol diario (numérico: desde 1 - muy poco a 5 - mucho)
+28. Walc - consumo de alcohol durante el fin de semana (numérico: desde 1 - muy poco a 5 - mucho)
+29. health - estado de salud del alumno (numérico: desde 1 - muy mal a 5 - muy bueno)
+30. absences - número de ausencias del alumno (numérico: desde 0 a 93)
 
-* school: colegio al que pertenece el alumno
-* sex: sexo del alumno
-* age: edad del alumno
-* adrress: ubicación del alumno (rural o de ciudad)
-* family size: tamaño de la familia
-* Pstatus: padres separados o no
-* Medu: nivel de educación de la madre
-* Fedu: nivel de educación del padre
-* Mjob: trabajo de la madre
-* Fjob: trabajo del padre
-* guardian: tutor
-* traveltime: tiempo recorrido hasta llegar al colegio
-* studytime: tiempo de estudio semanal del alumno
-* failures: suspensos
-* schoolsup: apoyo escolar
-* famsup: disponen de ayuda en la educación en casa
-* paid: recibe clases particulares pagadas
-* activities: actividades extraescolares
-* nursery: 
-* higher: el alumno quiere realizar estudios superiores
-* internet: el alumno tiene internet en casa
-* romantic: el alumno tiene pareja o no
-* famrel: calidad de las relaciones familiares
-* freetime: tiempo libre al salir del colegio
-* goout: el alumno sale con amigos
-* dalc: consumo de alcohol diario
-* walc: consumo de alcohol durante el fin de semana
-* health: estado de salud del alumno
-* absences: número de ausencias del alumno
-* G1: nota en el primer trimestre
-* G2: nota en el segundo trimestre
-* G3: nota en el tercer trimestre
+Además de los siguientes calificaciones relacionadas con las asignaturas de matemáticas y portugues:
+
+31. G1 - calificación primer trimestre (numérico: entre 0 a 20)
+32. G2 - calificación segundo trimestre (numérico: entre 0 a 20)
+33. G3 - calificación tercer trimestre (numérico: entre 0 a 20)
+
+## Importancia y objetivos de los análisis
+
+Se plantea la necesidad de responder a las siguientes preguntas:
+
+- ¿ Cuales serán las variables que influyen más en la calificación de los estudiantes ?
+- ¿ Predecir cuales serán la calificaciones de un estudiante en función de los otros atributos ? 
+- ¿ Hay alguna propiedad que pueda identificar a parte de la población ?
+- Los alumnos que dedican más tiempo al estudio sacan mejores notas.
+- Aquellos alumnos que van a clases particulares o reciben ayuda por parte de sus padres sacan mejores notas.
+- En general, las chicas son mejores estudiantes que los chicos.
+
+Estos análisis resultan de vital importancia tanto para el profesorado y dirección de una escuela, como para los padres de estudiantes. 
+
+
+
+## Integración y selección de los datos de interés a analizar.
+
+```{r message= FALSE, warning=FALSE}
+sMat=read.table("data/student-mat.csv",sep=",",header=TRUE)
+sPor=read.table("data/student-por.csv",sep=",",header=TRUE)
+
+# Según el propietario de los datos, los alumnos que están presentes en ambas asignaturas 
+# pueden ser identificados por los siguientes atributos
+sBoth=merge(sMat,sPor,by=c("school","sex","age","address","famsize","Pstatus","Medu","Fedu","Mjob","Fjob","reason","nursery","internet"))
+
+# school, sex, age, address, famsize, Pstatus, Medu, Fedu, Mjob, Fjob, reason, nursery, internet
+# traveltime, studytime, failures, schoolsup, famsup, paid, activities, higher, romantic, famrel
+# freetime, goout, Dalc, Walc, health, absences, subject
+```
+
+Ambos ficheros de datos de estudiantes contienen `r dim(sPor)[2]` atributos (columnas). El fichero de estudiantes de la asignatura de portugues contiene `r dim(sPor)[1]` estudiantes y, el de la asignatura de matemáticas `r dim(sMat)[1]` estudiantes. Si mezclamos ambos ficheros para obtener los alumnos que están en ambas asignaturas obtenemos un total de `r dim(sBoth)[1]` estudiantes.
+
+Vamos a crear un par de variables binarias nuevas para después unir los dos ficheros en un solo dataset:
+
+```{r message= FALSE, warning=FALSE}
+
+sMat$math = 'yes'
+sMat$port = 'no'
+sPor$math = 'no'
+sPor$port = 'yes'
+students = rbind(sMat,sPor)
+students$port = as.factor(students$port)
+students$math = as.factor(students$math)
+```
+
+Ahora tenemos un dataset con `r dim(students)[1]` estudiantes y `r dim(students)[2]` atributos.
+
+```{r message= TRUE, warning=FALSE}
+# Resumen
+glimpse(students)
+```
+
+```{r message= TRUE, warning=FALSE}
+# Estadísticas básicas
+summary(students)
+```
+
+```{r message= TRUE, warning=FALSE}
+# Tipo de dato asignado a cada campo
+sapply(students, class)
+```
+
+
+## Limpieza de los datos
+
+¿Los datos contienen ceros o elementos vacíos? ¿Cómo gestionarías cada uno
+de estos casos?
+
+Identificación y tratamiento de valores extremos.
+
+```{r message= TRUE, warning=FALSE}
+# Con datos nulos
+colSums(is.na(students))
+```
+```{r message= TRUE, warning=FALSE}
+# Con datos ""
+colSums(students=="")
+```
+```{r message= TRUE, warning=FALSE}
+# Con datos "?"
+colSums(students=="?")
+```
+```{r message= TRUE, warning=FALSE}
+# Valores unicos
+apply(students,2, function(x) length(unique(x)))
+```
+
+```{r message= TRUE, warning=FALSE}
+boxplot(students[, c("age", "Medu", "Fedu", "traveltime", "studytime", "failures", "famrel", "freetime", "goout", "Dalc", "Walc", "health", "absences")])
+```
+
+```{r message= TRUE, warning=FALSE}
+# Eliminamos outliers
+
+for(i in 1:ncol(students)) {
+  if (is.numeric(students[,i])){
+    outliers = boxplot.stats(students[,i])$out
+    index = which( students[,i] %in% outliers)
+    if(length(index)>0) {
+      #students=students[-index,]
+    }
+  }
+}
+```
+
+```{r message= TRUE, warning=FALSE}
+par(mfrow=c(2,2))
+for(i in 1:ncol(students)) {
+  if (is.numeric(students[,i])){
+    boxplot(students[,i], main = colnames(students)[i], width = 100)
+  }
+}
+```
+
+
+## Análisis de los datos
+  
+Selección de los grupos de datos que se quieren analizar/comparar (planificación
+de los análisis a aplicar).
+
+Comprobación de la normalidad y homogeneidad de la varianza.
+
+
+```{r message= TRUE, warning=FALSE}
+ggplot(students, aes(x=Dalc, y=G3, group=Dalc, fill=Dalc))+
+  geom_boxplot()+
+  xlab("Consumo diario de alcohol")+
+  ylab("Calificación")
+```
+  
+```{r message= TRUE, warning=FALSE}
+ggplot(students,aes(absences, studytime))+geom_count()+labs(x="absences", y="studytime")+ guides(fill=guide_legend(title=""))+ggtitle("Study hours")+theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r message= TRUE, warning=FALSE}
+
+ggplot(data = students[1:length(students),],aes(x=sex,fill=paid))+geom_bar(position="fill")+ylab("Frecuencia")
+```
+
+
+```{r message= TRUE, warning=FALSE}
+# Tests de normalidad 
+library(nortest)
+
+alpha = 0.05
+col.names = colnames(students)
+cat("Distribucion normal: \n")
+for (i in 1:ncol(students)) {
+  if (is.integer(students[,i]) | is.numeric(students[,i])) {
+    ad_val = (ad.test(students[,i])$p.value > alpha)
+    ks_val = (ks.test(students[,i], pnorm, mean(students[,i]), sd(students[,i]))$p.value > alpha)
+    sh_val = (shapiro.test(students[,i])$p.value > alpha)
+    cat(col.names[i])
+    cat("\t")
+    cat(ad_val,ks_val,sh_val,"\t")
+    cat("\n")
+  }
+}
+```
+
+```{r message= TRUE, warning=FALSE}
+par(mfrow=c(2,2))
+for(i in 1:ncol(students)) {
+  if (is.numeric(students[,i])){
+    qqnorm(students[,i],main = paste("Normal Q-Q Plot for ",colnames(students)[i]))
+    qqline(students[,i],col="red")
+    hist(students[,i], 
+      main=paste("Histogram for ", colnames(students)[i]), 
+      xlab=colnames(students)[i], freq = FALSE)
+  }
+}
+```
+
+
+```{r message= TRUE, warning=FALSE}
+# Análisis de correlación
+corr_matrix <- matrix(nc = 2, nr = 0)
+colnames(corr_matrix) <- c("estimate", "p-value")
+# Calcular el coeficiente de correlación para cada variable cuantitativa
+# con respecto al campo "precio"
+for (i in 1:(ncol(students))) {
+  if (colnames(students)[i] != "G3") {
+    if (is.integer(students[,i]) | is.numeric(students[,i])) {
+      spearman_test = cor.test(students[,i],
+                              students$G3,
+                              method = "spearman")
+      corr_coef = spearman_test$estimate
+      p_val = spearman_test$p.value
+      
+      # Add row to matrix
+      pair = matrix(ncol = 2, nrow = 1)
+      pair[1][1] = corr_coef
+      pair[2][1] = p_val
+      corr_matrix <- rbind(corr_matrix, pair)
+      rownames(corr_matrix)[nrow(corr_matrix)] <- colnames(students)[i]
+    }
+  }
+}
+print(corr_matrix)
+```
+
+```{r message= TRUE, warning=FALSE}
+color=diverge_hcl(length(students$G3))[rank(students$G3)]
+pairs(~ age + Medu + Fedu + traveltime + studytime + failures + famrel + G1 + G2 + G3, data = students, pch = 19, cex = 0.5, lower.panel = NULL, col = color)
+pairs(~ freetime + goout + Dalc + Walc + health + absences + G1 + G2 + G3, data = students, pch = 19, cex = 0.5, lower.panel = NULL, col = color)
+```
+
+## Pruebas estadísticas
+
+Aplicación de pruebas estadísticas para comparar los grupos de datos. En función
+de los datos y el objetivo del estudio, aplicar pruebas de contraste de hipótesis,
+correlaciones, regresiones, etc. Aplicar al menos tres métodos de análisis
+diferentes.
+
+### Modelo lineal
+
+```{r message= TRUE, warning=FALSE}
+smp_siz = floor(0.75*nrow(students))
+
+set.seed(123)   # set seed to ensure you always have same random numbers generated
+train_ind = sample(seq_len(nrow(students)),size = smp_siz)  # Randomly identifies the rows equal to sample size ( defined in previous instruction) from  all the rows of Smarket dataset and stores the row number in train_ind
+train = students[train_ind,] #creates the training dataset with row numbers stored in train_ind
+test = students[-train_ind,]  # creates the test dataset excluding the row numbers mentioned in train_ind
+```
+
+```{r message= TRUE, warning=FALSE}
+
+# Generación de varios modelos
+modelo1 <- lm(G3 ~ age + goout + Dalc + Walc + failures + absences, data = train)
+modelo2 <- lm(G3 ~ freetime + traveltime + failures, data = train)
+modelo3 <- lm(G3 ~ famrel + Medu + Fedu + Mjob + Fjob + famsup + paid, data = train)
+modelo4 <- lm(G3 ~ age + sex + romantic, data = train)
+modelo5 <- lm(G3 ~ schoolsup + famsup + address, data = train)
+
+tabla.coeficientes <- matrix(
+    c(1, summary(modelo1)$r.squared,
+      2, summary(modelo2)$r.squared,
+      3, summary(modelo3)$r.squared,
+      4, summary(modelo4)$r.squared,
+      5, summary(modelo5)$r.squared),
+    ncol = 2, byrow = TRUE)
+colnames(tabla.coeficientes) <- c("Modelo", "R^2")
+tabla.coeficientes
+```
+
+```{r message= TRUE, warning=FALSE}
+y_predict = predict(modelo1, test)
+
+```
+
+## Conclusiones
+
+
+# Recursos
+
+Los siguientes recursos son de utilidad para la realización de la práctica:
+● Calvo M., Subirats L., Pérez D. (2019). Introducción a la limpieza y análisis de los datos.
+Editorial UOC.
+● Megan Squire (2015). Clean Data. Packt Publishing Ltd.
+● Jiawei Han, Micheine Kamber, Jian Pei (2012). Data mining: concepts and techniques.
+Morgan Kaufmann.
+● Jason W. Osborne (2010). Data Cleaning Basics: Best Practices in Dealing with Extreme
+Scores. Newborn and Infant Nursing Reviews; 10 (1): pp. 1527-3369.
+● Peter Dalgaard (2008). Introductory statistics with R. Springer Science & Business Media.
+● Wes McKinney (2012). Python for Data Analysis. O’Reilley Media, Inc.
+● Tutorial de Github https://guides.github.com/activities/hello-world.
+
 
   
 
