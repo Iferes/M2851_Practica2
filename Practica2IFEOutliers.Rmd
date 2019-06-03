@@ -1,0 +1,215 @@
+---
+title: "Práctica 2: Limpieza y validación de los datos"
+author: ' Autores: César Fernández Domínguez, Isabel Fernández Esparza'
+date: "Junio 2019"
+output:
+  html_document:
+    highlight: default
+    number_sections: yes
+    theme: cosmo
+    toc: yes
+    toc_depth: 2
+    includes:
+      in_header: Practica2-header.html
+  pdf_document:
+    highlight: zenburn
+    toc: yes
+  word_document: default
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=T, echo=T)
+```
+******
+# Solución
+******
+
+## Descripción del dataset
+
+Para la realización de esta práctica hemos seleccionado dos conjuntos de datos con información académica y personal de estudiantes de dos colegios de Portugal tanto para la asignatura de portugués como para la de matemáticas. Estos juegos de datos están disponibles en el repositorio *kaggle*, en el enlace: https://www.kaggle.com/uciml/student-alcohol-consumption
+
+Este dataset contiene información de estudiantes de matemáticas y portugués de dos institutos portugueses. Estos estudiantes tienen una edad comprendida entre los 15 y 22 años. Creemos que este juego de datos puede ser interesante para analizar cómo afectan a los estudiantes de secundaria algunos factores como: nivel educativo de los padres, trabajo de los padres, consumo de alcohol, ditancia de los hogares de los estudiantes al colegio, tiempo de estudio semanal en los resultados académicos obtenidos.
+
+Además, podemos analizar si existe relación entre las diferentes notas obtenidas, de manera que pueda utilizarse este estudio para futuros cursos escolares, pudiendo predecir los resultados finales a partir de los obtenidos en el primer cuatrimestre y establecer las estrategias necesarias para poder invertir esta tendencia en caso de que la haya.
+
+Como los datos corresponden a dos colegios diferentes y con respecto a dos asignaturas distintas (matemáticas y portugués) podremos analizar también si los datos están sesgados por colegio, por asignatura o por género.
+
+El objetivo de esta práctica es limpiar los datos, unificarlos y poder estimar un modelo que pueda predecir el número de suspensos de un estudiante de matemáticas atendiendo a los factores anteriormente descritos. Teniendo en cuenta que en el juego de datos tenemos información de dos colegios diferentes podemos también intentar analizar si las predicciones realizadas están también sesgadas por el colegio al que pertenezcan los alumnos o por el sexo.
+
+
+El fichero de datos contiene 396 registros y 33 variables. Las variables de las que disponemos son:
+
+* school: colegio al que pertenece el alumno. Tomará dos posibles valores: 'GP' - 'Gabriel Pereira' o 'MS' - 'MOusinho da Silveira' 
+* sex: sexo del alumno. Tomará dos posibles valores: 'F' - Femenino o 'M' - Masculino
+* age: edad del alumno. Tomará valores numéricos comprendidos entre 15 y 22 ambos incluidos
+* adrress: tipo de residencia. Tomará dos posibles valores: 'R' - 'Rural' o 'U' - 'Urbana'
+* family size: tamaño de la familia. Tomará dos posibles valores: 'LE3' - Menor o igual que 3 miembros o 'GT3' - Mayor de 3 miembros
+* Pstatus: padres separados o no. Se representará mediante los siguientes valores: 'T' - Los padres viven juntos o 'A' - Los padres viven separados
+* Medu: nivel de educación de la madre. Tomará valores numéricos: 0 - Ninguno, 1 -  Educación primaria (hasta 4º grado), 2 - De 5º a 9º grado, 3 - Educación secundaria, 4 - Educación superior
+* Fedu: nivel de educación del padre. Tomará valores numéricos: 0 - Ninguno, 1 -  Educación primaria (hasta 4º grado), 2 - De 5º a 9º grado, 3 - Educación secundaria, 4 - Educación superior
+* Mjob: trabajo de la madre. Tomará los valores de texto: 'teacher' - Profesora, 'health' - relacionados con los cuidades, 'services' - Servicios civiles, 'at home' - Trabaja en casa, 'Other' - Otros
+* Fjob: trabajo del padre. Tomará los valores de texto: 'teacher' - Profesora, 'health' - relacionados con los cuidades, 'services' - Servicios civiles, 'at home' - Trabaja en casa, 'Other' - Otros
+* reason: razón por la que se escogió ese colegio. Tomará los valores: 'home' - Cerca de casa, 'reputation' - reputación del colegio, 'course' - Preferencia de modelo educativo, 'other' - otros motivos
+* guardian: tutor. Tomará los valores: 'mother' - madre, 'father' - padre, 'other' - otros
+* traveltime: tiempo recorrido hasta llegar al colegio. Tomará los siguientes valores numéricos: 1 - Tarda menos de 15 minutos, 2 - Tarda entre 15 y 30 minutos, 3 - Tarda entre 30 y 60 minutos, 4 - Tarda más de una hora
+* studytime: tiempo de estudio semanal del alumno. Tomará los siguientes valores numéricos: 1 - Máximo de 2 horas, 2 - de 2 a 5 horas semanales, 3 - de 5 a 10 horas semanales, 4 - Más de 10 horas semanales
+* failures: numero de asignaturas suspenesas. Tomará los valores numéricos: 1 - 1 asignatura suspensa, 2 - 2 asignaturas suspensas, 3 - 3 asignaturas suspensas, 4 - más de 3 asignaturas suespensas
+* schoolsup: apoyo educativo adicional. Tomará dos valores: sí o no
+* famsup: disponen de ayuda en la educación en casa. Tomará dos valores: sí o no
+* paid: recibe clases particulares pagadas para matemáticas o portugués en cada uno de los casos. Tomará dos valores: sí o no
+* activities: actividades extraescolares. Tomará dos valores: sí o no
+* nursery: acudií a guardería. Tomará dos valores: sí o no
+* higher: el alumno quiere realizar estudios superiores. Tomará dos valores: sí o no
+* internet: el alumno tiene internet en casa. Tomará dos valores: sí o no
+* romantic: el alumno tiene pareja o no. Tomará dos valores: sí o no
+* famrel: calidad de las relaciones familiares. Tomará los valores numericos de 1 a 5 siendo 1 - Muy malo y 5 - Muy bueno
+* freetime: tiempo libre al salir del colegio. Tomará los valores numericos de 1 a 5 siendo 1 - Muy poco y 5 - Mucho
+* goout: el alumno sale con amigos. Tomará los valores numericos de 1 a 5 siendo 1 - Muy poco y 5 - Mucho
+* dalc: consumo de alcohol diario. Tomará los valores numericos de 1 a 5 siendo 1 - Muy poco y 5 - Mucho
+* walc: consumo de alcohol durante el fin de semana. Tomará los valores numericos de 1 a 5 siendo 1 - Muy poco y 5 - Mucho
+* health: estado de salud del alumno. Tomará los valores numericos de 1 a 5 siendo 1 - Muy malo y 5 - Muy bueno
+* absences: número de ausencias del alumno. Valores numéricos comprendidos entre 0 y 93
+* G1: nota en el primer trimestre. Valor numérico comprendido entre 0 y 20 
+* G2: nota en el segundo trimestre. Valor numérico comprendido entre 0 y 20 
+* G3: nota final. Valor numérico comprendido entre 0 y 20  
+
+### Integración y selección de los datos de interés a realizar
+
+En primer lugar vamos a cargar los datos con los que vamos a trabajar
+
+```{r message= FALSE, warning=FALSE}
+# Leemos los datos de los dos juegos de datos
+dataMat<-read.csv("data/student-mat.csv",header=T,sep=",")
+dataPor<-read.csv("data/student-por.csv",header=T,sep=",")
+str(dataMat)
+str(dataPor)
+```
+  
+Vamos a ver cuántos datos tenemos de cada asignatura
+
+```{r message= FALSE, warning=FALSE}
+dim(dataPor)[1]
+dim(dataMat)[1]
+```
+
+Luego vemos que, tenemos datos de `r dim(dataPor)[1]` estudiantes de portugués y datos de `r dim(dataMat)[1]`
+
+La idea es juntar los datos de ambas asingaturas en un mismo dataset. Para ello, inicialmente vamos a crear una columna nueva en cada uno de los juegos de datos, identificando la asignatura a la que pertenece. Será una columna de tipo texto con el nombre de la asingatura a la que se refieren.
+
+```{r message= FALSE, warning=FALSE}
+# Añadimos dos columnas a cada juego de datos para identificar la asignatura a la que corresponden
+# Para el juego de datos de matemáticas, la columna de matemáticas será verdadera, y para la de portugués será falsa.
+
+dataMat$subject = "Maths"
+dataPor$subject = "Portuguese"
+str(dataMat)
+str(dataPor)
+```
+
+Una vez que tenemos creadas estas dos columnas, podemos unir los dos dataframes para poder estudiar uno solo
+
+```{r message= FALSE, warning=FALSE}
+dataStudent = rbind(dataMat,dataPor)
+str(dataStudent)
+dataStudent2 = merge(dataMat, dataPor,by = c("school", "sex", "age", "address", "famsize", "Pstatus", "Medu", "Fedu", "Mjob", "Fjob", "reason", "nursery", "internet"))
+str(dataStudent2)
+summary(dataStudent2)
+```
+
+Luego ya tenemos integrados nuestros datos en un único dataframe llamado: dataStudent. En este dataframe vemos que hay datos del mismo alumno. Según lo que se indica en la página de kaggle, las columnas que determinan el alumno son: "school","sex","age","address","famsize","Pstatus","Medu","Fedu","Mjob","Fjob","reason","nursery","internet". Hay en total 395 estudiantes para los que tenemos información de ambas asignaturas.
+```{r message= FALSE, warning=FALSE}
+dataStudent2 = merge(dataMat, dataPor,by = c("school", "sex", "age", "address", "famsize", "Pstatus", "Medu", "Fedu", "Mjob", "Fjob", "reason", "nursery", "internet"))
+```
+
+### Limpieza de datos
+
+#### ¿Los datos tienen contienen ceros o elementos vacíos? ¿Cómo gestionaríamos cada uno de estos casos?
+
+Primero vamos a comprobar si nuestro juego de datos contiene valores vacíos.
+
+```{r message= FALSE, warning=FALSE}
+colSums(is.na(dataStudent))
+```
+
+vemos que no existen valores vacíos.
+
+Ahora vamos a comprobar si existen valores vacíos
+
+```{r message= FALSE, warning=FALSE}
+colSums(dataStudent=="")
+```
+
+Se observa que tampoco existen valores vacíos. 
+
+Vamos a ver ahora si existen valores con caracteres incorrectos como por ejemplo '?'
+
+```{r message= FALSE, warning=FALSE}
+colSums(dataStudent=="?")
+```
+
+Tampoco existen valores con caracteres ?
+
+Luego como no existen ceros o elementos vacios no tenemos que hacer nada a este respecto.
+
+#### Identificación y tratamiento de valores extremos
+
+Los valores extremos o outliers son aquellas observaciones que están fuera de 1,5*IQR donde IQR es la diferencia entre los cuartiles 75 y 25. Para buscar los outliers en nuestro juego de datos, primero vamos a ver cuáles son las variables numéricas que tenemos en el juego de datos. Guardamos las columnas numéricas en un vector llamado dataNumerico
+
+```{r message= FALSE, warning=FALSE}
+j = 1
+for (i in 1:ncol(dataStudent)){
+  #print(colnames(dataStudent[i]))
+  if (is.numeric(dataStudent[,i])){
+    print(j)
+    print(colnames(dataStudent[i]))
+    dataNumerico[j] = colnames(dataStudent[i])
+    j = sum(j,1)
+    print(j)
+
+  }
+}
+print(dataNumerico[2])
+
+boxplot(dataStudent,dataNumerico)
+```
+Utilizamos esas variables para calcular los outliers. Vamos a recorrer las diferentes variables numéricas que hemos recogido en dataNumerico para ver si tienen outliers
+
+```{r message= FALSE, warning=FALSE}
+#print(dataNumerico)
+for (i in 1:length(dataNumerico)){
+  outlier_values = boxplot.stats(dataStudent$dataNumerico[i])$out
+  boxplot(dataStudent[,dataNumerico[i]], main=dataNumerico[i], boxwex=0.1)
+  mtext(paste("Outliers: ", paste(outlier_values, collapse=", ")), cex=0.6)
+}
+```
+
+
+Vamos a analizar los diferentes outliers para cada una de las variables numéricas:
+
+Hemos encontrado información interesante para el tratamiento de los outliers en la siguiente dirección web
+
+https://www.ugr.es/~fmocan/MATERIALES%20DOCTORADO/Tratamiento%20de%20outliers%20y%20missing.pdf
+
+Variable Age: Vemos que hay un outlier en el valor 22. En este caso consideramos que este valor no debería eliminarse y deberia tratarse como uno más, probablemente el hecho de que haya alumnos de 22 años en el mismos curso que alumnos de 18 años estará relacionado con algunas de las variables que queremos analizar.
+
+Variables Medu y Fedu: No tienen valores extremos.
+
+Variable traveltime: Vemos que hay un outlier en el valor 4. Es decir, se dan casos extremos en los que los alumnos tardan 4 horas en llegar al colegio. Vamos a ver cuántas veces se da este valor en nuestra muestra
+
+```{r message= FALSE, warning=FALSE}
+dataStudent[dataStudent$traveltime>3,]
+```
+
+Tenemos solo 24 registros de alumnos que tardan más de 3 horas (es decir, 4) al colegio. Entendemos esta observación como consecuencia de un acontecimiento extraordinario, luego podemos prescindir de estos valores para nuestro análisis. 
+```{r message= FALSE, warning=FALSE}
+# Nos quedamos entonces solo con los datos de alumnos que tardan como máximo 3 horas en llegar a la escuela.
+dataStudent = dataStudent[dataStudent$traveltime<=3,]
+str(dataStudent)
+```
+
+Variable studytime: Tenemos outliers en el valor 4. Aunque este valos se sale de la media, la diferencia entre el resto de valores es solo de una hora, luego no nos parece que sea un outlier como tal, asi que vamos a dejarlo como está.
+
+Variable failures: Nos ocurre lo mismo que en el caso anterior, los valores que aparecen señalados como outliers son precisamente objetos fundamentales de nuestro análisis y no debemos tratarlos como tal.
+
+Variable famrel: Tenemos outliers en 1 y 2. Estos valores miden la calidad de las relaciones familiares, entendiendo que estos valores se han obtenido a través de una encuesta a los propios alumnos.  No tenemos explicación acerca de por qué tenemos estos datos así. Replicaremos el análisis excluyendo estas observaciones para ver si tienen influencia sobre los resultados.
