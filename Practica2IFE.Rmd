@@ -1,9 +1,10 @@
 ---
 title: "Tipología y ciclo de vida de los datos"
 subtitle: "Práctica 2: Limpieza y validación de los datos"
-author: ' Autores: César Fernández Domínguez, Isabel Fernández Esparza'
+author: 'Autores: César Fernández Domínguez, Isabel Fernández Esparza'
 date: "Junio 2019"
 output:
+  word_document: default
   html_document:
     highlight: default
     number_sections: yes
@@ -15,7 +16,6 @@ output:
   pdf_document:
     highlight: zenburn
     toc: yes
-  word_document: default
 ---
 
 
@@ -123,6 +123,29 @@ sBoth=merge(sMat,sPor,by=c("school","sex","age","address","famsize","Pstatus","M
 
 Ambos ficheros de datos de estudiantes contienen `r dim(sPor)[2]` atributos (columnas). El fichero de estudiantes de la asignatura de portugues contiene `r dim(sPor)[1]` estudiantes y, el de la asignatura de matemáticas `r dim(sMat)[1]` estudiantes. Si mezclamos ambos ficheros para obtener los alumnos que están en ambas asignaturas obtenemos un total de `r dim(sBoth)[1]` estudiantes.
 
+Identificamos cada estudiante mediante los atributos indicados por el propietario del juego de datos. Generamos un identificador con la concatenación de estos atributos para cada estudiante. Después, en otro paso, convertiremos este identificador en un valor numérico que identifique a cada estudiante.
+
+```{r message= FALSE, warning=FALSE}
+sMat$id = paste(sMat$school,sMat$sex,sMat$age,sMat$address,sMat$famsize,sMat$Pstatus,sMat$Medu,sMat$Fedu,sMat$Mjob,sMat$Fjob,sMat$reason,sMat$nursery,sMat$internet, sep="-")
+sPor$id = paste(sPor$school,sPor$sex,sPor$age,sPor$address,sPor$famsize,sPor$Pstatus,sPor$Medu,sPor$Fedu,sPor$Mjob,sPor$Fjob,sPor$reason,sPor$nursery,sPor$internet, sep="-")
+```
+
+Creamos una variable "score" que contendrá la media de las tres notas de los tres trimestres por cada alumno y asignatura. Luego, a partir de esta variable, creamos una variable categórica que exprese si un alumno ha aprobado o suspendido la asignatura.
+
+```{r message= FALSE, warning=FALSE}
+sMat$score = rowMeans(subset(sMat, select = c(G1, G2, G3)), na.rm = TRUE)
+sMat$mark<-sMat$score
+sMat$mark[sMat$score<10] <- "fail"
+sMat$mark[sMat$score>=10] <- "pass"
+sMat$mark <- as.factor(sMat$mark)
+
+sPor$score = rowMeans(subset(sPor, select = c(G1, G2, G3)), na.rm = TRUE)
+sPor$mark<-sPor$score
+sPor$mark[sPor$score<10] <- "fail"
+sPor$mark[sPor$score>=10] <- "pass"
+sPor$mark <- as.factor(sPor$mark)
+```
+
 Vamos a crear un par de variables binarias nuevas para después unir los dos ficheros en un solo dataset:
 
 ```{r message= FALSE, warning=FALSE}
@@ -136,7 +159,15 @@ students$port = as.factor(students$port)
 students$math = as.factor(students$math)
 ```
 
-Ahora tenemos un dataset con `r dim(students)[1]` estudiantes y `r dim(students)[2]` atributos.
+Ahora, a partir del identificador que anteriormente habiamos creado para cada estudiante, lo transformamos en un identificador numérico simple.
+
+```{r message= FALSE, warning=FALSE}
+students = transform(students, id=as.numeric(factor(id)))
+students$id = as.factor(students$id)
+```
+
+Ahora tenemos un dataset con `r dim(students)[1]` instancias y `r dim(students)[2]` atributos para un total de `r length(unique(students$id))` estudiantes de ambas asignaturas.
+
 
 ```{r message= TRUE, warning=FALSE}
 # Resumen
@@ -230,25 +261,40 @@ ggplot(students,aes(absences, studytime))+geom_count()+labs(x="absences", y="stu
 ggplot(data = students[1:length(students),],aes(x=sex,fill=paid))+geom_bar(position="fill")+ylab("Frecuencia")
 ```
 
+```{r message= TRUE, warning=FALSE}
+ggplot(sPor,aes(x=studytime,fill=mark))+geom_histogram(binwidth = 2)+ylab("Frecuencia")+facet_wrap(~sex )
+ggplot(sPor,aes(x=studytime,fill=mark))+geom_bar()+ylab("Frecuencia")+facet_wrap(~sex )
+```
+
+```{r message= TRUE, warning=FALSE}
+ggplot(sPor,aes(x=mark,fill=famsize))+geom_bar()+ylab("Frecuencia")+facet_wrap(~sex )
+ggplot(sPor,aes(x=mark,fill=famsize))+geom_bar(position='fill')+ylab("Frecuencia")+facet_wrap(~sex )
+```
 
 ```{r message= TRUE, warning=FALSE}
 # Tests de normalidad 
 library(nortest)
+
+# Función que aplica distintos test de homogeneidad sobre los datos de entrada
+normTest <- function(data) {
+  ad_val = (ad.test(data)$p.value > alpha)
+  ks_val = (ks.test(data, pnorm, mean(data), sd(data))$p.value > alpha)
+  sh_val = (shapiro.test(data)$p.value > alpha)
+  cat(ad_val,ks_val,sh_val,"\t")
+}
 
 alpha = 0.05
 col.names = colnames(students)
 cat("Distribucion normal: \n")
 for (i in 1:ncol(students)) {
   if (is.integer(students[,i]) | is.numeric(students[,i])) {
-    ad_val = (ad.test(students[,i])$p.value > alpha)
-    ks_val = (ks.test(students[,i], pnorm, mean(students[,i]), sd(students[,i]))$p.value > alpha)
-    sh_val = (shapiro.test(students[,i])$p.value > alpha)
     cat(col.names[i])
     cat("\t")
-    cat(ad_val,ks_val,sh_val,"\t")
+    normTest(students[,i])
     cat("\n")
   }
 }
+
 ```
 
 ```{r message= TRUE, warning=FALSE}
