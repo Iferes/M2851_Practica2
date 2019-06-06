@@ -4,7 +4,6 @@ subtitle: "Práctica 2: Limpieza y validación de los datos"
 author: 'Autores: César Fernández Domínguez, Isabel Fernández Esparza'
 date: "Junio 2019"
 output:
-  word_document: default
   html_document:
     highlight: default
     number_sections: yes
@@ -13,6 +12,7 @@ output:
     toc_depth: 2
     includes:
       in_header: Practica2-header.html
+  word_document: default
   pdf_document:
     highlight: zenburn
     toc: yes
@@ -239,22 +239,47 @@ for(i in 1:ncol(students)) {
 
 ## Análisis de los datos
   
-Selección de los grupos de datos que se quieren analizar/comparar (planificación
-de los análisis a aplicar).
+Selección de los grupos de datos que se quieren analizar/comparar (planificación de los análisis a aplicar).
 
 Comprobación de la normalidad y homogeneidad de la varianza.
 
+A continuación, se seleccionan los grupos dentro de nuestro conjunto de datos que pueden resultar interesantes para analizar y/o comparar. No obstante, como se verá en el apartado consistente en la realización de pruebas estadísticas, no todos se utilizarán.
 
 ```{r message= TRUE, warning=FALSE}
-ggplot(students, aes(x=Dalc, y=G3, group=Dalc, fill=Dalc))+
-  geom_boxplot()+
-  xlab("Consumo diario de alcohol")+
-  ylab("Calificación")
+# school, sex, age, address, famsize, Pstatus, Medu, Fedu, Mjob, Fjob, reason, nursery, internet
+# traveltime, studytime, failures, schoolsup, famsup, paid, activities, higher, romantic, famrel
+# freetime, goout, Dalc, Walc, health, absences, subject
+
+# Agrupación por sexo de los estudiantes
+students.male <- students[students$sex == "M",]
+students.female <- students[students$sex == "F",]
+
+# Agrupación por si reciben clases particules pagadas o no
+students.paid <- students[students$paid == "yes",]
+students.nopaid <- students[students$paid == "no",]
+
+# Agrupación por si reciben soporte por parte de la familia
+students.famsup <- students[students$famsup == "yes",]
+students.nofamsup <- students[students$famsup == "no",]
+
+# Agrupación por si reciben ayuda extra escolar
+students.schoolsup <- students[students$schoolsup == "yes",]
+students.noschoolsup <- students[students$schoolsup == "no",]
+
+# Agrupación por tiempo dedicado al estudio
+students.studytime <- students[students$studytime >= 3,]
+students.nostudytime <- students[students$studytime < 3,]
+
+# Agrupación por edad
+students.mayores <- students[students$age >= 16,]
+students.menores <- students[students$age < 16,]
+
+# Agrupación por asignatura
+students.port <- students[students$port == "yes",]
+students.math <- students[students$math == "yes",]
 ```
-  
-```{r message= TRUE, warning=FALSE}
-ggplot(students,aes(absences, studytime))+geom_count()+labs(x="absences", y="studytime")+ guides(fill=guide_legend(title=""))+ggtitle("Study hours")+theme(plot.title = element_text(hjust = 0.5))
-```
+
+### Análisis visual
 
 ```{r message= TRUE, warning=FALSE}
 
@@ -262,25 +287,31 @@ ggplot(data = students[1:length(students),],aes(x=sex,fill=paid))+geom_bar(posit
 ```
 
 ```{r message= TRUE, warning=FALSE}
-ggplot(sPor,aes(x=studytime,fill=mark))+geom_histogram(binwidth = 2)+ylab("Frecuencia")+facet_wrap(~sex )
-ggplot(sPor,aes(x=studytime,fill=mark))+geom_bar()+ylab("Frecuencia")+facet_wrap(~sex )
+ggplot(students,aes(x=studytime,fill=mark))+geom_histogram(binwidth = 2)+ylab("Frecuencia")+facet_wrap(~sex )
+ggplot(students,aes(x=studytime,fill=mark))+geom_bar()+ylab("Frecuencia")+facet_wrap(~sex )
 ```
 
 ```{r message= TRUE, warning=FALSE}
-ggplot(sPor,aes(x=mark,fill=famsize))+geom_bar()+ylab("Frecuencia")+facet_wrap(~sex )
-ggplot(sPor,aes(x=mark,fill=famsize))+geom_bar(position='fill')+ylab("Frecuencia")+facet_wrap(~sex )
+ggplot(students,aes(x=mark,fill=famsize))+geom_bar()+ylab("Frecuencia")+facet_wrap(~sex )
+ggplot(students,aes(x=mark,fill=famsize))+geom_bar(position='fill')+ylab("Frecuencia")+facet_wrap(~sex )
 ```
+##Comprobación de la normalidad y homogeneidad de la varianza
+Para la comprobación de que los valores que toman nuestras variables cuantitativas provienen de una población distribuida normalmente, utilizaremos la prueba de normalidad de Anderson-Darling.
+Así, se comprueba que para que cada prueba se obtiene un p-valor superior al nivel de significación prefijado α	$alpha$ = 0,05. Si esto se cumple, entonces se considera que la variable en cuestión sigue una distribución normal.
 
 ```{r message= TRUE, warning=FALSE}
 # Tests de normalidad 
 library(nortest)
 
 # Función que aplica distintos test de homogeneidad sobre los datos de entrada
-normTest <- function(data) {
-  ad_val = (ad.test(data)$p.value > alpha)
-  ks_val = (ks.test(data, pnorm, mean(data), sd(data))$p.value > alpha)
-  sh_val = (shapiro.test(data)$p.value > alpha)
+normTest <- function(data, name) {
+  ad_val = (ad.test(data)$p.value > alpha) # Anderson-Darling test
+  ks_val = (ks.test(data, pnorm, mean(data), sd(data))$p.value > alpha) # Kolmogorov-Smirnov test
+  sh_val = (shapiro.test(data)$p.value > alpha) # Shapiro test
+  cat(name)
+  cat("\t")
   cat(ad_val,ks_val,sh_val,"\t")
+  cat("\n")
 }
 
 alpha = 0.05
@@ -288,28 +319,76 @@ col.names = colnames(students)
 cat("Distribucion normal: \n")
 for (i in 1:ncol(students)) {
   if (is.integer(students[,i]) | is.numeric(students[,i])) {
-    cat(col.names[i])
-    cat("\t")
-    normTest(students[,i])
-    cat("\n")
+    normTest(students[,i], col.names[i])
   }
 }
 
+```
+```{r message= TRUE, warning=FALSE}
+normTest(students.female[,c("goout")], "goout~female")
+normTest(students.male[,c("goout")], "goout~male")
+normTest(students.female[,c("Walc")], "Walc~female")
+normTest(students.male[,c("Walc")], "Walc~male")
+normTest(students.female[,c("score")], "score~female")
+normTest(students.male[,c("score")], "score~male")
+normTest(students.studytime[,c("score")], "score~studytime")
+normTest(students.nostudytime[,c("score")], "score~nostudytime")
+normTest(students.mayores[,c("score")], "score~mayores")
+normTest(students.menores[,c("score")], "score~menores")
+normTest(students.paid[,c("score")], "score~paid")
+normTest(students.nopaid[,c("score")], "score~nopaid")
+normTest(students.schoolsup[,c("score")], "score~schoolsup")
+normTest(students.noschoolsup[,c("score")], "score~noschoolsup")
+normTest(students.famsup[,c("score")], "score~famsup")
+normTest(students.nofamsup[,c("score")], "score~nofamsup")
+```
+
+Seguidamente, pasamos a estudiar la homogeneidad de varianzas mediante la aplicación de un test de Fligner-Killeen. En este caso, estudiaremos esta homogeneidad en cuanto a los grupos conformados por los vehículos que presentan un motor turbo frente a un motor estándar. En el siguiente test, la hipótesis nula consiste en que ambas varianzas son iguales.
+
+```{r message= TRUE, warning=FALSE}
+fligner.test(score ~ age, data = students)
+```
+```{r message= TRUE, warning=FALSE}
+fligner.test(score ~ sex, data = students)
 ```
 
 ```{r message= TRUE, warning=FALSE}
+plotNormHistogram <- function(data, name) {
+    qqnorm(data,main = paste("Normal Q-Q Plot for ",name))
+    qqline(data,col="red")
+    hist(data, 
+      main=paste("Histogram for ", name), 
+      xlab=name, freq = FALSE)
+}
+
 par(mfrow=c(2,2))
 for(i in 1:ncol(students)) {
   if (is.numeric(students[,i])){
-    qqnorm(students[,i],main = paste("Normal Q-Q Plot for ",colnames(students)[i]))
-    qqline(students[,i],col="red")
-    hist(students[,i], 
-      main=paste("Histogram for ", colnames(students)[i]), 
-      xlab=colnames(students)[i], freq = FALSE)
+    plotNormHistogram(students[,i], colnames(students)[i])
   }
 }
 ```
+```{r message= TRUE, warning=FALSE}
+par(mfrow=c(2,2))
+plotNormHistogram(students[(students$sex == "F"),c("goout")], "goout~sex")
+plotNormHistogram(students[(students$sex == "M"),c("goout")], "goout~sex")
+plotNormHistogram(students[(students$sex == "F"),c("Walc")], "Walc~sex")
+plotNormHistogram(students[(students$sex == "M"),c("Walc")], "Walc~sex")
+plotNormHistogram(students[(students$sex == "F"),c("score")], "score~sex")
+plotNormHistogram(students[(students$sex == "M"),c("score")], "score~sex")
+plotNormHistogram(students[(students$studytime > 2),c("score")], "score~studytime")
+plotNormHistogram(students[(students$age < 16),c("score")], "score~age")
+```
 
+
+## Pruebas estadísticas
+
+Aplicación de pruebas estadísticas para comparar los grupos de datos. En función
+de los datos y el objetivo del estudio, aplicar pruebas de contraste de hipótesis,
+correlaciones, regresiones, etc. Aplicar al menos tres métodos de análisis
+diferentes.
+
+### Correlaciones
 
 ```{r message= TRUE, warning=FALSE}
 # Análisis de correlación
@@ -318,10 +397,10 @@ colnames(corr_matrix) <- c("estimate", "p-value")
 # Calcular el coeficiente de correlación para cada variable cuantitativa
 # con respecto al campo "precio"
 for (i in 1:(ncol(students))) {
-  if (colnames(students)[i] != "G3") {
+  if (colnames(students)[i] != "score") {
     if (is.integer(students[,i]) | is.numeric(students[,i])) {
       spearman_test = cor.test(students[,i],
-                              students$G3,
+                              students$score,
                               method = "spearman")
       corr_coef = spearman_test$estimate
       p_val = spearman_test$p.value
@@ -339,17 +418,24 @@ print(corr_matrix)
 ```
 
 ```{r message= TRUE, warning=FALSE}
-color=diverge_hcl(length(students$G3))[rank(students$G3)]
-pairs(~ age + Medu + Fedu + traveltime + studytime + failures + famrel + G1 + G2 + G3, data = students, pch = 19, cex = 0.5, lower.panel = NULL, col = color)
-pairs(~ freetime + goout + Dalc + Walc + health + absences + G1 + G2 + G3, data = students, pch = 19, cex = 0.5, lower.panel = NULL, col = color)
+color=diverge_hcl(length(students$mark))[rank(students$mark)]
+pairs(~ age + Medu + Fedu + traveltime + studytime + failures + famrel + G1 + G2 + G3 + score, data = students, pch = 19, cex = 0.5, lower.panel = NULL, col = color)
+pairs(~ freetime + goout + Dalc + Walc + health + absences + G1 + G2 + G3 + score, data = students, pch = 19, cex = 0.5, lower.panel = NULL, col = color)
 ```
 
-## Pruebas estadísticas
+### ¿Las chicas sacan mejores notas que los chicos?
 
-Aplicación de pruebas estadísticas para comparar los grupos de datos. En función
-de los datos y el objetivo del estudio, aplicar pruebas de contraste de hipótesis,
-correlaciones, regresiones, etc. Aplicar al menos tres métodos de análisis
-diferentes.
+
+```{r message= TRUE, warning=FALSE}
+t.test(students.male$score, students.female$score, alternative = "less")
+```
+
+### ¿Quien más tiempo dedica al estudio saca mejores notas?
+
+```{r message= TRUE, warning=FALSE}
+t.test(students.nostudytime$score, students.studytime$score, alternative = "less")
+```
+
 
 ### Modelo lineal
 
@@ -365,26 +451,38 @@ test = students[-train_ind,]  # creates the test dataset excluding the row numbe
 ```{r message= TRUE, warning=FALSE}
 
 # Generación de varios modelos
-modelo1 <- lm(G3 ~ age + goout + Dalc + Walc + failures + absences, data = train)
-modelo2 <- lm(G3 ~ freetime + traveltime + failures, data = train)
-modelo3 <- lm(G3 ~ famrel + Medu + Fedu + Mjob + Fjob + famsup + paid, data = train)
-modelo4 <- lm(G3 ~ age + sex + romantic, data = train)
-modelo5 <- lm(G3 ~ schoolsup + famsup + address, data = train)
+modelo1 <- lm(score ~ G1, data = train)
+modelo2 <- lm(score ~ G1 + G2, data = train)
+modelo3 <- lm(score ~ G1 + G2 + G3, data = train)
+modelo4 <- lm(score ~ G1 + G3, data = train)
+modelo5 <- lm(score ~ G1 + G3 + studytime, data = train)
+modelo6 <- lm(score ~ studytime + sex + absences, data = train)
+modelo7 <- lm(score ~ studytime + paid, data = train)
+modelo8 <- lm(score ~ G1 + G3 + studytime + paid, data = train)
 
 tabla.coeficientes <- matrix(
     c(1, summary(modelo1)$r.squared,
       2, summary(modelo2)$r.squared,
       3, summary(modelo3)$r.squared,
       4, summary(modelo4)$r.squared,
-      5, summary(modelo5)$r.squared),
+      5, summary(modelo5)$r.squared,
+      6, summary(modelo6)$r.squared,
+      7, summary(modelo7)$r.squared,
+      8, summary(modelo8)$r.squared),
     ncol = 2, byrow = TRUE)
 colnames(tabla.coeficientes) <- c("Modelo", "R^2")
 tabla.coeficientes
 ```
-
 ```{r message= TRUE, warning=FALSE}
-y_predict = predict(modelo1, test)
-
+summary(modelo1)
+```
+```{r message= TRUE, warning=FALSE}
+y_predict = predict(modelo8, test)
+```
+```{r message= TRUE, warning=FALSE}
+plot(test$score, col = "green", xlab = "", ylab = "", ylim = range(0,15)) 
+points(y_predict, col = "blue") 
+legend("bottom", c("real", "predicted"), pch = "o", col = c("green", "blue"), trace = TRUE)
 ```
 
 ## Conclusiones
