@@ -261,7 +261,7 @@ dataStudent$sex = as.factor(dataStudent$sex)
 dataStudent.men <- dataStudent[dataStudent$sex == "M",]
 dataStudent.women <- dataStudent[dataStudent$sex == "F",]
 
-# Agrupación por prefesiones de los padres
+# Agrupación por profesiones de los padres
 dataStudent.fatherTeacher <- dataStudent[dataStudent$Fjob == "teacher",]
 dataStudent.fatherHealt <- dataStudent[dataStudent$Fjob == "health",]
 dataStudent.fatherServices <- dataStudent[dataStudent$Fjob == "services",]

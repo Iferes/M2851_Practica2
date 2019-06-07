@@ -35,6 +35,7 @@ library(cowplot)
 library(colorspace)
 library(mlbench)
 library(caret)
+library(car)
 ```
 
 ******
@@ -95,9 +96,10 @@ Además de los siguientes calificaciones relacionadas con las asignaturas de mat
 
 Se plantea la necesidad de responder a las siguientes preguntas:
 
-- ¿ Cuales serán las variables que influyen más en la calificación de los estudiantes ?
+- ¿ Cuales son las variables que influyen más en la calificación de los estudiantes ?
 - ¿ Predecir cuales serán la calificaciones de un estudiante en función de los otros atributos ? 
 - ¿ Hay alguna propiedad que pueda identificar a parte de la población ?
+
 - Los alumnos que dedican más tiempo al estudio sacan mejores notas.
 - Aquellos alumnos que van a clases particulares o reciben ayuda por parte de sus padres sacan mejores notas.
 - En general, las chicas son mejores estudiantes que los chicos.
@@ -343,13 +345,27 @@ normTest(students.famsup[,c("score")], "score~famsup")
 normTest(students.nofamsup[,c("score")], "score~nofamsup")
 ```
 
+> Se utiliza el test de Fligner-Killeen, al no tener normalidad en los datos. 
+> Se utilizaría el test Levene cuando hay normalidad en los datos.
+
 Seguidamente, pasamos a estudiar la homogeneidad de varianzas mediante la aplicación de un test de Fligner-Killeen. En este caso, estudiaremos esta homogeneidad en cuanto a los grupos conformados por los vehículos que presentan un motor turbo frente a un motor estándar. En el siguiente test, la hipótesis nula consiste en que ambas varianzas son iguales.
 
 ```{r message= TRUE, warning=FALSE}
 fligner.test(score ~ age, data = students)
 ```
+
+```{r message= TRUE, warning=FALSE}
+leveneTest(score ~ age, data = students)
+```
+
+Dado que ambas pruebas resultan en un p-valor inferior al nivel de significancia (<0.05), se rechaza la hipótesis nula de homocedasticidad y se concluye que la variable count presenta varianzas estadísticamente diferentes para los diferentes grupos de spray.
+
 ```{r message= TRUE, warning=FALSE}
 fligner.test(score ~ sex, data = students)
+```
+
+```{r message= TRUE, warning=FALSE}
+leveneTest(score ~ sex, data = students)
 ```
 
 ```{r message= TRUE, warning=FALSE}
