@@ -169,9 +169,6 @@ for (i in 1:ncol(dataStudent)){
 
   }
 }
-print(dataNumerico[2])
-
-boxplot(dataStudent,dataNumerico)
 ```
 Utilizamos esas variables para calcular los outliers. Vamos a recorrer las diferentes variables numéricas que hemos recogido en dataNumerico para ver si tienen outliers
 
@@ -212,4 +209,259 @@ Variable studytime: Tenemos outliers en el valor 4. Aunque este valos se sale de
 
 Variable failures: Nos ocurre lo mismo que en el caso anterior, los valores que aparecen señalados como outliers son precisamente objetos fundamentales de nuestro análisis y no debemos tratarlos como tal.
 
-Variable famrel: Tenemos outliers en 1 y 2. Estos valores miden la calidad de las relaciones familiares, entendiendo que estos valores se han obtenido a través de una encuesta a los propios alumnos.  No tenemos explicación acerca de por qué tenemos estos datos así. Replicaremos el análisis excluyendo estas observaciones para ver si tienen influencia sobre los resultados.
+Variable famrel: Tenemos outliers en 1 y 2. Estos valores miden la calidad de las relaciones familiares, entendiendo que estos valores se han obtenido a través de una encuesta a los propios alumnos.  Estos valores tan bajos en algunas calificaciones pueden deberse a una manipulación por parte de los alumnos en las respuestas. Consideramos que una forma de tratar estos outliers es reemplazarlos por la media.
+```{r message= FALSE, warning=FALSE}
+
+```
+```{r message= FALSE, warning=FALSE}
+str(dataStudent)
+```
+
+
+Variable freetime: Existe un outlier en el valor 1
+
+##Análisis de los datos.
+Como queremos analizar cómo afectan a las notas de los alumnos sus diferentes circunstancias personales, vamos a crear una variable categórica calification, para dividir las notas numéricas entre: A, B, C y D siendo D suspenso.
+
+```{r message= FALSE, warning=FALSE}
+# Primero creamos la variable calification
+dataStudent$calification <- dataStudent$G3
+dataStudent$calification<-sPor$score
+dataStudent$calification[(dataStudent$G3<=20) & (dataStudent$G3>=18)] <- "A"
+dataStudent$calification[(dataStudent$G3<18) & (dataStudent$G3>=14)] <- "B"
+dataStudent$calification[dataStudent$G3<14 & dataStudent$G3>=10] <- "C"
+dataStudent$calification[dataStudent$G3<10] <- "D"
+dataStudent$calification <- as.factor(dataStudent$calification)
+glimpse(dataStudent)
+```
+
+### Selección de los grupos de datos que se quieren analizar/comparar
+
+Como una primera aproximación, vamos a ver gráficamente cómo están distribuidos las calificaciones por sexo, por profesión de los padres, por colegios...
+
+```{r message= TRUE, warning=FALSE}
+ggplot(dataStudent[1:dim(dataStudent)[1],],aes(x=calification,fill=sex))+geom_bar(position="fill")+ylab("Frecuencia")
+```
+Y aquí vemos que, aunque están bastante uniformemente distribuidos, hay un porcentaje mayor de mujeres con buenas calificaciones que de hombres
+
+
+Si ahora analizamos cómo están distribuidas las calificaciones para las asignaturas.
+```{r message= TRUE, warning=FALSE}
+ggplot(dataStudent[1:dim(dataStudent)[1],],aes(x=calification,fill=subject))+geom_bar(position="fill")+ylab("Frecuencia")
+```
+
+Vemos que es más frecuente suspender (obtener una D) matemáticas que portugués y que 
+
+
+A continuación, veremos aquellos grupos dentro de nuestro conjunto de datos que podamos ver que son interesantes para analizar y comparar.
+
+```{r message= FALSE, warning=FALSE}
+# Agrupación por sexo
+dataStudent$sex = as.factor(dataStudent$sex)
+dataStudent.men <- dataStudent[dataStudent$sex == "M",]
+dataStudent.women <- dataStudent[dataStudent$sex == "F",]
+
+# Agrupación por prefesiones de los padres
+dataStudent.fatherTeacher <- dataStudent[dataStudent$Fjob == "teacher",]
+dataStudent.fatherHealt <- dataStudent[dataStudent$Fjob == "health",]
+dataStudent.fatherServices <- dataStudent[dataStudent$Fjob == "services",]
+dataStudent.fatherAtHome <- dataStudent[dataStudent$Fjob == "at_home",]
+dataStudent.fatherOther <- dataStudent[dataStudent$Fjob == "other",]
+
+dataStudent.motherTeacher <- dataStudent[dataStudent$Mjob == "teacher",]
+dataStudent.motherHealt <- dataStudent[dataStudent$Mjob == "health",]
+dataStudent.motherServices <- dataStudent[dataStudent$Mjob == "services",]
+dataStudent.motherAtHome <- dataStudent[dataStudent$Mjob == "at_home",]
+dataStudent.motherOther <- dataStudent[dataStudent$Mjob == "other",]
+
+# Agrupación por ayudas
+```
+
+
+ 
+### Comprobación de la normalidad y homogeneidad de la varianza
+
+QUeremos utilizar esta muestra de datos para poder predecir las calificaciones que obtendrán los alumnos según una característica. Por ejemplo, nuestra hipótesis es: un alumno que quiera realizar estudios superiores, tendrá una calificación mayor o igual a 14 puntos tanto en matemáticas como en portugués.
+
+Para poder realizar estas pruebas paramétricas con nuestro juego de datos tenemos que analizar si los datos referentes a la calificación final siguen una distribución normal.
+
+Existen diferentes pruebas de normalidad que podemos llevar a cabo para realizar estos estudios:
+
+- Pruebas gráficas basadas en gráficos de normalidad como Q Q_Plots. Podríamos calcular la normalidad sobre todas las variables numéricas. Los análisis e hipótesis que estamos barajando se centran en las notas de los alumnos, luego vamos a revisar si las variables de notas: G1, G2 y G3 están normalizadas
+```{r message= FALSE, warning=FALSE}
+# Usamos el test de Saphiro Wilk para analizar la normalidad de estas variables
+shapiro.test(dataStudent$G1)
+```
+
+Vemos que el valor de p es menor que 0,05 luego tenemos una distribución que no es normal
+
+```{r message= FALSE, warning=FALSE}
+# Usamos el test de Saphiro Wilk para analizar la normalidad de estas variables
+shapiro.test(dataStudent$G2)
+```
+
+Tampoco tenemos una distribución normal
+
+```{r message= FALSE, warning=FALSE}
+# Usamos el test de Saphiro Wilk para analizar la normalidad de estas variables
+shapiro.test(dataStudent$G3)
+```
+
+Tampoco tenemos una distribución normal.
+
+Ahora vamos a comprobar la normalidad de estos mismos valores utilizando el test de Anderson-Darling
+
+```{r message= FALSE, warning=FALSE}
+# Usamos el test de Anderson-Darling para analizar la normalidad de estas variables
+ad.test(dataStudent$G1)
+ad.test(dataStudent$G2)
+ad.test(dataStudent$G3)
+```
+
+Nuevamente vemos que el valor de p es menor que 0,05 para los tres casos luego como en caso anterior no siguen una distribución
+normal
+
+Veamos ahora los resultados que obtenemos con el test de Cramer-von Mises
+
+```{r message= FALSE, warning=FALSE}
+# Usamos el test de Cramer-von Mises para analizar la normalidad de estas variables
+cvm.test(dataStudent$G1)
+cvm.test(dataStudent$G2)
+cvm.test(dataStudent$G3)
+```
+
+Obtenemos los mismos resultados
+
+Por último, vamos a verificar que obtenemos lo mismo con el test de Kolmogorov
+
+```{r message= FALSE, warning=FALSE}
+# Usamos el test de Anderson-Darling para analizar la normalidad de estas variables
+lillie.test(dataStudent$G1)
+lillie.test(dataStudent$G2)
+lillie.test(dataStudent$G3)
+```
+
+Obtenemos los mismos resultados
+
+## Estudio de homogeneidad de la varianza
+
+Teniendo en cuenta que en el apartado anterior hemos visto que los datos no siguen una distribución normal, lo más recomendable para estudiar la homogeneidad de la varianza es utilizar tests que comparen la mediana de la varianza, por ejemplo el test de Levene 
+```{r message= FALSE, warning=FALSE}
+library(car)
+leveneTest(y = dataStudent$G1, group = dataStudent$sex, center = "median")
+leveneTest(y = dataStudent$G2, group = dataStudent$sex, center = "median")
+leveneTest(y = dataStudent$G3, group = dataStudent$sex, center = "median")
+```
+
+Vemos que el valor de p es mayor que 0,05 para todos los casos, luego podemos inferir que las varianzas de la distribución de las notas para el primer trimestre, el segundo y la calificación final para hombres o mujers es la misma.
+
+Vamos ahora a analizar la homogeneidad de la varianza de las notas de los estudiantes atendiendo a los niveles de estudios de los padres (Medu y Fedu)
+
+```{r message= FALSE, warning=FALSE}
+leveneTest(y = dataStudent$G1, group = dataStudent$Medu, center = "median")
+leveneTest(y = dataStudent$G2, group = dataStudent$Medu, center = "median")
+leveneTest(y = dataStudent$G3, group = dataStudent$Medu, center = "median")
+```
+
+Vemos que para las notas del primer y segundo trimestre las varianzas no son homogéneas para los grupos de estudiantes cuyas madres tienen diferentes niveles de estudios, sin embargo el valor de p para el test realizado con las pruebas finales es mayor que 0,05 luego en ese caso las varianzas si se distribuyen homogéneamente.
+
+Para el caso de los niveles de estudios de los padres
+
+```{r message= FALSE, warning=FALSE}
+leveneTest(y = dataStudent$G1, group = dataStudent$Fedu, center = "median")
+leveneTest(y = dataStudent$G2, group = dataStudent$Fedu, center = "median")
+leveneTest(y = dataStudent$G3, group = dataStudent$Fedu, center = "median")
+```
+
+Vemos que en este caso las varianzas si son homogéneas para los distintos niveles de estudios de los padres
+
+## Aplicación de pruebas estadísticas para comparar los grupos de datos. Aplicar pruebas de contrastes de hipótesis, regresiones, correlaciones,...
+
+En este juego de datos vemos que tenemos tres notas numéricas: G1 correspondiente al primer trimestre, G2 correspondiente al segundo y G3 la calificación final. Parece lógico pensar que existe relación entre estas notas. Veamos si, efectivamente estamos en lo cierto en nuestra hipótesis, y estas 3 variables están correlacionadas.
+
+Primero vamos a ver si están relacionadas G1 y G2. Como hemos visto que estas variables no siguen una distribución normal, vamos a utilizar el método de correlación de Spearman para estudiar la correlación entre estas dos variables.
+
+```{r message= FALSE, warning=FALSE}
+# Primero vamos a representar las dos variables en un diagrama de dispersión para ver si ya visualmente se puede intuir si existe relación lineal. 
+
+ggplot(data = dataStudent, aes(x = dataStudent$G1, y = dataStudent$G2)) + 
+  geom_point(colour = "red4") +
+  ggtitle("Diagrama de dispersión 1er trimestre vs segundo trimestre") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(data = dataStudent, aes(x = dataStudent$G1, y = dataStudent$G3)) + 
+  geom_point(colour = "red4") +
+  ggtitle("Diagrama de dispersión 1er trimestre vs final") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(data = dataStudent, aes(x = dataStudent$G2, y = dataStudent$G3)) + 
+  geom_point(colour = "red4") +
+  ggtitle("Diagrama de dispersión segundo trimestre vs final") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+```
+
+Luego, a la vista de estos diagramas, parece intuirse que existe una posible relación lineal entre las notas de cada trimestre.
+
+Como ya hemos visto que estas variables no siguen una distribución normal, vamos a analizar la correlación utilizando el test de Spearman
+
+```{r message= FALSE, warning=FALSE}
+cor(x = dataStudent$G1, y = log10(dataStudent$G2), method = "spearman")
+cor(x = dataStudent$G1, y = log10(dataStudent$G3), method = "spearman")
+cor(x = dataStudent$G2, y = log10(dataStudent$G3), method = "spearman")
+```
+
+Vemos que para los 3 casos el grado de correlación es alto (mayor que 0,8). Pero para poder realmente considerar que existe correlación entre las variables debemos calcular la significancia
+
+```{r message= FALSE, warning=FALSE}
+# https://rpubs.com/Joaquin_AR/223351
+cor.test(x = dataStudent$G1,
+         y = log10(dataStudent$G2),
+         alternative = "two.sided",
+         conf.level  = 0.95,
+         method      = "spearman")
+
+cor.test(x = dataStudent$G1,
+         y = log10(dataStudent$G3),
+         alternative = "two.sided",
+         conf.level  = 0.95,
+         method      = "spearman")
+
+cor.test(x = dataStudent$G2,
+         y = log10(dataStudent$G3),
+         alternative = "two.sided",
+         conf.level  = 0.95,
+         method      = "spearman")
+```
+
+Vemos que, para los tres casos, los coeficientes de correlación son significativos puesto que p está próximo a 0 en los tres casos.
+
+## Regresión logística
+Imaginemos que queremos realizar un estudio para establecer un modelo que permita calcular cuál es la probabilidad de predecir que un estudiante ha recibido ayuda extraescolar (schoolsup) en función de la nota final que ha obtenido
+
+En primer lugar vamos a representar las observaciones para poder intuir gráficamente si la varibale escogida (la nota de G3) está relacionada con la variable respuesta (obtienen ayuda escolar) y puede considerarse que es un buen predictor
+
+```{r message= FALSE, warning=FALSE}
+library(ggplot2)
+ggplot(data = dataStudent, aes(x = dataStudent$schoolsup, y = dataStudent$G3, color = schoolsup)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1) +
+  theme_bw() +
+  theme(legend.position = "null")
+```
+
+Parece que hay diferencias entre la distribución de las notas para alumnos que reciban ayuda.
+
+Ahora vamos a generar el modelo
+
+```{r message= FALSE, warning=FALSE}
+modelo <- glm(dataStudent$schoolsup ~ dataStudent$G3, data = dataStudent, family = "binomial")
+summary(modelo)
+```
+
+
+
