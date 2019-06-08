@@ -95,19 +95,21 @@ Además de los siguientes calificaciones relacionadas con las asignaturas de mat
 
 ## Importancia y objetivos de los análisis
 
-Se plantea la necesidad de responder a las siguientes preguntas:
+Según vemos en la descripción del dataset, se nos plantea la necesidad de evaluar de que forma afectan las distintas condiciones de cada estudiante para el resultado final del curso, es decir, para la nota final obtenida. Para esto, en primer lugar, necesitaremos definir alguna nueva variable que tenga en cuenta la nota obtenida durante los tres trimestres que dura el curso, como veremos en el siguiente apartado.
+
+Son muchos los análisis y preguntas que se podrían intentar responder a partir de estos datos. Sin embargo, en nuestro caso, nos vamos centrar en las siguientes preguntas:
 
 - ¿ Cuales son las variables que influyen más en la calificación de los estudiantes ?
 
-- ¿ Predecir cuales serán la calificaciones de un estudiante en función de los otros atributos ? 
+- ¿ Es posible predecir cual será la calificación final de un estudiante en función de los otros atributos ? 
 
-- Los alumnos que dedican más tiempo al estudio sacan mejores notas.
-- Aquellos alumnos que van a clases particulares o reciben ayuda por parte de sus padres sacan mejores notas.
-- En general, las chicas son mejores estudiantes que los chicos.
+- ¿ Los alumnos que dedican más tiempo al estudio sacan mejores notas ?
 
-Estos análisis resultan de vital importancia tanto para el profesorado y dirección de una escuela, como para los padres de estudiantes. 
+- ¿ Aquellos alumnos que van a clases particulares o reciben ayuda por parte de sus padres sacan mejores notas ?
 
+- En general, ¿las chicas son mejores estudiantes que los chicos?
 
+Todas estas preguntas vamos a intentar responderlas con nuestro siguiente análisis. Como podemos adivinar, este análisis puede resultar de vital importancia tanto para el profesorado y dirección de una escuela, como para los padres de estudiantes, para así conocer si las medidas tomadas dentro y fuera de la escuela llevan a unos mejores resultados académicos.
 
 ## Integración y selección de los datos de interés a analizar.
 
@@ -133,9 +135,8 @@ sMat$id = paste(sMat$school,sMat$sex,sMat$age,sMat$address,sMat$famsize,sMat$Pst
 sPor$id = paste(sPor$school,sPor$sex,sPor$age,sPor$address,sPor$famsize,sPor$Pstatus,sPor$Medu,sPor$Fedu,sPor$Mjob,sPor$Fjob,sPor$reason,sPor$nursery,sPor$internet, sep="-")
 ```
 
-Creamos una variable "score" que contendrá la media de las tres notas de los tres trimestres por cada alumno y asignatura. Luego, a partir de esta variable, creamos una variable categórica que exprese si un alumno ha aprobado o suspendido la asignatura.
-
-5-Level classification – based on the Erasmus1 grade conversion system: 
+Creamos una variable "score" que contendrá la media de las tres notas de los tres trimestres por cada alumno y asignatura. Luego, a partir de esta variable, creamos una variable categórica que exprese si un alumno ha aprobado o suspendido la asignatura. Además, creamos una nueva variable categórica que expresará la nota obtenida según la clasificación de cinco niveles utilizada en los grados Erasmus.
+ 
 ```{r message= FALSE, warning=FALSE}
 sMat$score = rowMeans(subset(sMat, select = c(G1, G2, G3)), na.rm = TRUE)
 sMat$mark<-sMat$score
@@ -183,22 +184,26 @@ students$id = as.factor(students$id)
 
 Ahora tenemos un dataset con `r dim(students)[1]` instancias y `r dim(students)[2]` atributos para un total de `r length(unique(students$id))` estudiantes de ambas asignaturas.
 
-
+Así, nuestro dataset nos queda como:
 ```{r message= TRUE, warning=FALSE}
 # Resumen
 glimpse(students)
 ```
+```{r message= FALSE, warning=FALSE, include=FALSE}
+nro_factors = 0
+nro_numeric = 0
+for (i in 1:ncol(students)) {
+  if (is.factor(students[,i])) nro_factors=nro_factors+1 else nro_numeric=nro_numeric+1
+}
+```
+Tenemos un total de `r nro_numeric` variables numéricas y `r nro_factors` categóricas.
 
+A continuación, mostramos las estadísticas básicas para cada variable de nuestro dataset final:
 ```{r message= TRUE, warning=FALSE}
 # Estadísticas básicas
 summary(students)
 ```
-
-```{r message= TRUE, warning=FALSE}
-# Tipo de dato asignado a cada campo
-sapply(students, class)
-```
-
+Vemos que tenemos muchos más alumnos del colegio Gabriel Pereira (`r dim(students[students$school == "GP",])[1]`) que del Mousinho da Silveira (`r dim(students[students$school == "MS",])[1]`). Un total de `r dim(students[students$mark == "pass",])[1]` aprobados frente a `r dim(students[students$mark == "fail",])[1]` suspensos.
 
 ## Limpieza de los datos
 
@@ -302,17 +307,21 @@ Variable freetime: Existe un outlier en el valor 1
   
 ### Selección de los grupos de datos que se quieren analizar/comparar (planificación de los análisis a aplicar).
 
-A continuación, se seleccionan los grupos dentro de nuestro conjunto de datos que pueden resultar interesantes para analizar y/o comparar. No obstante, como se verá en el apartado consistente en la realización de pruebas estadísticas, no todos se utilizarán.
+En este apartado, vamos a realizar una selección de atributos que podrán ser de utilidad para los análisis posteriores en función de los objetivos iniciales. 
+
+Por ejemplo, podemos discreminar nuestros datos según su género: hombre o mujer (male o female):
 
 ```{r message= TRUE, warning=FALSE}
-# school, sex, age, address, famsize, Pstatus, Medu, Fedu, Mjob, Fjob, reason, nursery, internet
-# traveltime, studytime, failures, schoolsup, famsup, paid, activities, higher, romantic, famrel
-# freetime, goout, Dalc, Walc, health, absences, subject
-
 # Agrupación por sexo de los estudiantes
 students.male <- students[students$sex == "M",]
 students.female <- students[students$sex == "F",]
+```
 
+Esta agrupación nos podrá servir para intentar responder a la pregunta de si las chicas son, en general, mejores estudiantes que los chicos.
+
+Por otro parte, también podemos agrupar nuestros datos dependiendo de si reciben algún tipo de ayuda en el estudio, por ejemplo: mediante clases particulares, ayuda familiar o soporte extra en el colegio. 
+
+```{r message= TRUE, warning=FALSE}
 # Agrupación por si reciben clases particules pagadas o no
 students.paid <- students[students$paid == "yes",]
 students.nopaid <- students[students$paid == "no",]
@@ -324,47 +333,128 @@ students.nofamsup <- students[students$famsup == "no",]
 # Agrupación por si reciben ayuda extra escolar
 students.schoolsup <- students[students$schoolsup == "yes",]
 students.noschoolsup <- students[students$schoolsup == "no",]
+```
 
-# Agrupación por estudios de los padres
-students.parentedu <- students[(students$Medu == "yes") | (students$Medu == "yes"),]
-students.parentnoedu <- students[(students$Medu == "no") & (students$Medu == "no"),]
+También vamos a realizar una agrupación de los estudiantes dependiendo del número de horas que dediquen semanalmente al estudio. En este caso, agrupamos por aquellos que dedican 3 o más horas semanalmente al estudio y aquellos que dedican menos de 3 horas semanales.
 
+```{r message= TRUE, warning=FALSE}
 # Agrupación por tiempo dedicado al estudio
 students.studytime <- students[students$studytime >= 3,]
 students.nostudytime <- students[students$studytime < 3,]
+```
 
+Como vemos, resulta muy sencillo realizar la agrupación de nuestros datos dependiendo de distintas variables. Así, por ejemplo, también podremos disociar nuestros datos dependiendo del nivel de estudios de los padres.
+
+```{r message= TRUE, warning=FALSE}
+# Agrupación por estudios de los padres
+students.parentedu <- students[(students$Medu >= 3) | (students$Fedu >= 3),]
+students.parentnoedu <- students[(students$Medu < 3) & (students$Fedu < 3),]
+```
+o, agrupando por edad de los estudiantes:
+
+```{r message= TRUE, warning=FALSE}
 # Agrupación por edad
 students.mayores <- students[students$age >= 16,]
 students.menores <- students[students$age < 16,]
-
-# Agrupación por asignatura
-students.port <- students[students$port == "yes",]
-students.math <- students[students$math == "yes",]
 ```
+
+Estas agrupaciones de los datos de nuestro dataset original no serán todas utilizada en los siguientes análisis. O, como en la siguiente sección, esta agrupación será realizada de forma gráfica.
 
 ### Análisis visual
 
+En este apartado vamos a realizar un análisis gráfico básico de nuestro dataset respecto a las variables objeto de nuestro estudio.
+
+En primer lugar, vemos cual es la distribución de notas de los estudiantes entre chicos y chicas.
 
 ```{r message= TRUE, warning=FALSE}
-ggplot(students,aes(x=studytime,fill=calification))+geom_bar(position="fill")+ylab("Porcentaje")+facet_wrap(~sex )
-ggplot(students,aes(x=studytime,fill=calification))+geom_bar()+ylab("Frecuencia")+facet_wrap(~sex )
+fig1 = ggplot(students,aes(x=sex,fill=calification))+geom_bar(position="fill")+ylab("Porcentaje")
+fig2 = ggplot(students,aes(x=sex,fill=calification))+geom_bar()+ylab("Frecuencia")
+grid.arrange(fig1, fig2, ncol=2)
 ```
+
+Vemos como, en porcentaje, ambos grupos presentan notas similares. Quizá podemos apreciar un mayor porcentaje de aprobados en las chicas que en los chicos, pero nada significativo. También vemos que el número de muestras de chicas es superior al de chicos.
+
+En las siguientes figuras, mostramos la calificación respecto a las horas de estudio semanales dedicadas por cada estudiante:
 
 ```{r message= TRUE, warning=FALSE}
-ggplot(students,aes(x=schoolsup,fill=calification))+geom_bar(position="fill")+ylab("Porcentaje")+facet_wrap(~sex )
-ggplot(students,aes(x=schoolsup,fill=calification))+geom_bar()+ylab("Frecuencia")+facet_wrap(~sex )
+fig1 = ggplot(students,aes(x=studytime,fill=calification))+geom_bar(position="fill")+ylab("Porcentaje")
+fig2 = ggplot(students,aes(x=studytime,fill=calification))+geom_bar()+ylab("Frecuencia")
+grid.arrange(fig1, fig2, ncol=2)
 ```
+
+Vemos como, a medida que se aumenta el número de horas semanales de estudio, aumenta también la probabilidad de obtener una nota alta. Vemos como, a pesar de dedicar más de 4 horas semanales al estudio, el porcentaje de suspensos es mayor que aquellos que solamente dedican 3 horas semanales. Lo cual confirma lo que siempre se dice que con dedicar un poco de tiempo diariamente al estudio es suficiente para sacar buenas notas. También observamos que el número de alumnos que dedican más horas al estudio es mucho menor que aquellos que dedican más horas.
+
+Si diferenciamos entre chicos y chicas:
 
 ```{r message= TRUE, warning=FALSE}
-ggplot(students,aes(x=paid,fill=calification))+geom_bar(position="fill")+ylab("Porcentaje")+facet_wrap(~sex )
-ggplot(students,aes(x=paid,fill=calification))+geom_bar()+ylab("Frecuencia")+facet_wrap(~sex )
+fig1 = ggplot(students,aes(x=studytime,fill=calification))+geom_bar(position="fill")+ylab("Porcentaje")+facet_wrap(~sex )
+fig2 = ggplot(students,aes(x=studytime,fill=calification))+geom_bar()+ylab("Frecuencia")+facet_wrap(~sex )
+grid.arrange(fig1, fig2, ncol=2)
 ```
+
+Vemos como en los chicos es significativo el porcentaje de suspensos en aquellos alumnos que dedican 4 horas o más semanales al estudio. Casi equiparable a aquellos que practicamente no dedican tiempo al estudio. En las chicas se ve una mayor progresión en mejoría de las notas a medida que se aumenta el tiempo de estudio. En las chicas, la gran mayoría afirma dedicar solamente 2 horas al estudio semanalmente.
+
+Ahora vamos a visualizar cual es la influencia de la ayuda extra sobre las calificaciones de los estudiantes.
+
+En primer lugar, visualizamos como influye el hecho de que los alumnos reciban ayuda extra por parte del colegio.
 
 ```{r message= TRUE, warning=FALSE}
-ggplot(students,aes(x=famsup,fill=calification))+geom_bar(position="fill")+ylab("Porcentaje")+facet_wrap(~sex )
-ggplot(students,aes(x=famsup,fill=calification))+geom_bar()+ylab("Frecuencia")+facet_wrap(~sex )
+fig1 = ggplot(students,aes(x=schoolsup,fill=calification))+geom_bar(position="fill")+ylab("Porcentaje")
+fig2 = ggplot(students,aes(x=schoolsup,fill=calification))+geom_bar()+ylab("Frecuencia")
+grid.arrange(fig1, fig2, ncol=2)
 ```
 
+En primer lugar, vemos que el número de alumnos que recibe ayuda extra es muy inferior a los que no la reciben. Seguramente esta ayuda solamente sea dada a aquellos alumnos que, por diversas razones, se vea que necesitan un soporte especial por parte del colegio (en general, mal estudiante). Vemos, que, a pesar de recibir ayuda extra en el colegio, practicamente el 70% de estos estudiantes suspende. Sí hay un pequeño porcentaje que aprueba con buena cualificación.
+
+Diferenciando entre chicos y chicas:
+
+```{r message= TRUE, warning=FALSE}
+fig1 = ggplot(students,aes(x=schoolsup,fill=calification))+geom_bar(position="fill")+ylab("Porcentaje")+facet_wrap(~sex )
+fig2 = ggplot(students,aes(x=schoolsup,fill=calification))+geom_bar()+ylab("Frecuencia")+facet_wrap(~sex )
+grid.arrange(fig1, fig2, ncol=2)
+```
+
+Apreciamos que el hecho de recibir ayuda extra por parte del colegio, es mejor aprovechado por las chicas que por los chicos. En el caso de los chicos, unicamente aprueba alrededor del 20% de los chicos que recibe soporte extra por parte del colegio.
+
+Analizando según vayan a clases particules o no, tenemos:
+
+```{r message= TRUE, warning=FALSE}
+fig1 = ggplot(students,aes(x=paid,fill=calification))+geom_bar(position="fill")+ylab("Porcentaje")
+fig2 = ggplot(students,aes(x=paid,fill=calification))+geom_bar()+ylab("Frecuencia")
+grid.arrange(fig1, fig2, ncol=2)
+```
+
+En estas gráficas vemos como un porcentaje pequeño (alrededor del 20%) de los estudiantes recibe clases particulares. Vemos que el porcentaje de aprobados es mayor en aquellos que van a clases particulares, pero no significativamente. Además es mayor el porcentaje de aprobados con nota más alta en aquellos alumnos que no reciben clases particulares. Posiblemente, porque el hecho de recibir clases particules se perciba más en estudiantes que necesitan un pequeño soporte extra.
+
+De igual forma que en otros casos, si diferenciamos entre chicos y chicas, tenemos:
+
+```{r message= TRUE, warning=FALSE}
+fig1 = ggplot(students,aes(x=paid,fill=calification))+geom_bar(position="fill")+ylab("Porcentaje")+facet_wrap(~sex )
+fig2 = ggplot(students,aes(x=paid,fill=calification))+geom_bar()+ylab("Frecuencia")+facet_wrap(~sex )
+grid.arrange(fig1, fig2, ncol=2)
+```
+
+En este caso no se aprecian diferencias significativas entre chicos y chicas. Quizá, podemos observar que, la mejora, en porcentage, entre aquellos estudiantes que van a clases particulares y los que no, es mayor en las chicas.
+
+Por último, visualizamos la distribución de las calificaciones de los estudiantes dependiendo de si reciben ayuda por parte de su familia o no:
+
+```{r message= TRUE, warning=FALSE}
+fig1 = ggplot(students,aes(x=famsup,fill=calification))+geom_bar(position="fill")+ylab("Porcentaje")
+fig2 = ggplot(students,aes(x=famsup,fill=calification))+geom_bar()+ylab("Frecuencia")
+grid.arrange(fig1, fig2, ncol=2)
+```
+
+En este caso, es resaltable que el número de estudiantes que recibe ayuda de su familia es bastante mayor de los que no la reciben. Sin embargo, los resultados académicos con equipables (gráfica de porcentajes).
+
+Diferenciando entre chicos y chicas:
+
+```{r message= TRUE, warning=FALSE}
+fig1 = ggplot(students,aes(x=famsup,fill=calification))+geom_bar(position="fill")+ylab("Porcentaje")+facet_wrap(~sex )
+fig2 = ggplot(students,aes(x=famsup,fill=calification))+geom_bar()+ylab("Frecuencia")+facet_wrap(~sex )
+grid.arrange(fig1, fig2, ncol=2)
+```
+
+Son casi el doble las chicas reciben ayuda de sus familiares de las que no. En los chicos está más equilibrado. En cuando a los resultados académicos, vemos una ligera mejoría, ligerísima, entre las chicas que reciben ayuda y las que no. 
 
 ### Comprobación de la normalidad y homogeneidad de la varianza
 Para la comprobación de que los valores que toman nuestras variables cuantitativas provienen de una población distribuida normalmente, utilizaremos la prueba de normalidad de Anderson-Darling.
@@ -422,7 +512,7 @@ fligner.test(score ~ age, data = students)
 ```
 
 ```{r message= TRUE, warning=FALSE}
-leveneTest(score ~ age, data = students)
+#leveneTest(score ~ age, data = students)
 ```
 
 Dado que ambas pruebas resultan en un p-valor inferior al nivel de significancia (<0.05), se rechaza la hipótesis nula de homocedasticidad y se concluye que la variable count presenta varianzas estadísticamente diferentes para los diferentes grupos de spray.
@@ -432,7 +522,7 @@ fligner.test(score ~ sex, data = students)
 ```
 
 ```{r message= TRUE, warning=FALSE}
-leveneTest(score ~ sex, data = students)
+#leveneTest(score ~ sex, data = students)
 ```
 
 ```{r message= TRUE, warning=FALSE}
@@ -479,29 +569,29 @@ Luego, a la vista de estos diagramas, parece intuirse que existe una posible rel
 Como ya hemos visto que estas variables no siguen una distribución normal, vamos a analizar la correlación utilizando el test de Spearman
 
 ```{r message= FALSE, warning=FALSE}
-cor(x = dataStudent$G1, y = log10(dataStudent$G2), method = "spearman")
-cor(x = dataStudent$G1, y = log10(dataStudent$G3), method = "spearman")
-cor(x = dataStudent$G2, y = log10(dataStudent$G3), method = "spearman")
+cor(x = students$G1, y = log10(students$G2), method = "spearman")
+cor(x = students$G1, y = log10(students$G3), method = "spearman")
+cor(x = students$G2, y = log10(students$G3), method = "spearman")
 ```
 
 Vemos que para los 3 casos el grado de correlación es alto (mayor que 0,8). Pero para poder realmente considerar que existe correlación entre las variables debemos calcular la significancia
 
 ```{r message= FALSE, warning=FALSE}
 # https://rpubs.com/Joaquin_AR/223351
-cor.test(x = dataStudent$G1,
-         y = log10(dataStudent$G2),
+cor.test(x = students$G1,
+         y = log10(students$G2),
          alternative = "two.sided",
          conf.level  = 0.95,
          method      = "spearman")
 
-cor.test(x = dataStudent$G1,
-         y = log10(dataStudent$G3),
+cor.test(x = students$G1,
+         y = log10(students$G3),
          alternative = "two.sided",
          conf.level  = 0.95,
          method      = "spearman")
 
-cor.test(x = dataStudent$G2,
-         y = log10(dataStudent$G3),
+cor.test(x = students$G2,
+         y = log10(students$G3),
          alternative = "two.sided",
          conf.level  = 0.95,
          method      = "spearman")
@@ -509,18 +599,34 @@ cor.test(x = dataStudent$G2,
 
 Vemos que, para los tres casos, los coeficientes de correlación son significativos puesto que p está próximo a 0 en los tres casos.
 
+### Pruebas de hipótesis
 
-### ¿Las chicas sacan mejores notas que los chicos?
+En esta sección, vamos a intentar responder a algunas de las preguntas que se plantearon en los objetivos iniciales mediante distintas pruebas de hipótesis. Como si las chicas 
 
+#### ¿Las chicas sacan mejores notas que los chicos?
 
 ```{r message= TRUE, warning=FALSE}
 t.test(students.male$score, students.female$score, alternative = "less")
 ```
 
-### ¿Quien más tiempo dedica al estudio saca mejores notas?
+#### ¿Quien más tiempo dedica al estudio saca mejores notas?
 
 ```{r message= TRUE, warning=FALSE}
 t.test(students.nostudytime$score, students.studytime$score, alternative = "less")
+```
+
+#### ¿Aquellos alumnos que van a clases particulares o reciben ayuda por parte de sus padres sacan mejores notas?
+
+```{r message= TRUE, warning=FALSE}
+t.test(students.nopaid$score, students.paid$score, alternative = "less")
+```
+
+```{r message= TRUE, warning=FALSE}
+t.test(students.noschoolsup$score, students.noschoolsup$score, alternative = "less")
+```
+
+```{r message= TRUE, warning=FALSE}
+t.test(students.nofamsup$score, students.famsup$score, alternative = "less")
 ```
 
 ## Aquellos alumnos que van a clases particulares o reciben ayuda por parte de sus padres sacan mejores notas
