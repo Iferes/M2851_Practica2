@@ -4,6 +4,7 @@ subtitle: "Práctica 2: Limpieza y validación de los datos"
 author: 'Autores: César Fernández Domínguez, Isabel Fernández Esparza'
 date: "Junio 2019"
 output:
+  word_document: default
   html_document:
     highlight: default
     number_sections: yes
@@ -12,7 +13,6 @@ output:
     toc_depth: 4
     includes:
       in_header: Practica2-header.html
-  word_document: default
   pdf_document:
     highlight: zenburn
     toc: yes
