@@ -9,7 +9,7 @@ output:
     number_sections: yes
     theme: cosmo
     toc: yes
-    toc_depth: 2
+    toc_depth: 4
     includes:
       in_header: Practica2-header.html
   word_document: default
@@ -285,7 +285,7 @@ students = students[students$traveltime<=3,]
 - **Variable freetime**: La variable freetime tiene un outlier en el valor 1, vamos a ver cuántos estudiantes cumplen esta condición. 
 
 ```{r message= FALSE, warning=FALSE}
-students[students$freetime==1,]
+nrow(students[students$freetime==1,])
 ```
 
 Son 64 alumnos que tienen muy poco tiempo libre entre semana. Puesto que este valor está relacionado con el tiempo de estudio semanal y con las ayudas extrasescolares que puedan recibir los alumnos decidimos mantenerlos también.
@@ -318,7 +318,7 @@ Nos parece que los valores que están en un intervalo de (10,30) son admisibles,
 En total, vamos a contar cuántos datos tenemos para ausencias mayores o iguales que 40
 
 ```{r message= FALSE, warning=FALSE}
-students[students$absences>=40,]
+nrow(students[students$absences>=40,])
 ```
 
 Vemos que tenemos 4 valores, luego decidimos eliminarlos de nuestro conjunto de datos.
@@ -763,7 +763,7 @@ wilcox.test(score ~ famsup, data = students)
 
 Según el resultado obtenido, no podemos decir que exista diferencia significativa en las notas finales, entre los estudiantes que son ayudados por su familia en casa y los que no.
 
-### Modelo lineal
+### Modelo de regresión lineal
 
 Tal y como hemos visto, existe una fuerte correlación entre las distintas variables que se refieren a las calificaciones y la nota final. Por lo tanto, vamos a utilizar estas variables para obtener un modelo lineal que nos permita predecir las notas de los estudiantes a partir de algunas de las otras variables.
 
