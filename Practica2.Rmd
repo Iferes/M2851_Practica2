@@ -288,7 +288,7 @@ students = students[students$traveltime<=3,]
 nrow(students[students$freetime==1,])
 ```
 
-Son 64 alumnos que tienen muy poco tiempo libre entre semana. Puesto que este valor está relacionado con el tiempo de estudio semanal y con las ayudas extrasescolares que puedan recibir los alumnos decidimos mantenerlos también.
+Son 62 alumnos que tienen muy poco tiempo libre entre semana. Puesto que este valor está relacionado con el tiempo de estudio semanal y con las ayudas extrasescolares que puedan recibir los alumnos decidimos mantenerlos también.
 
 - **Variable famrel**:  Tenemos outliers en los valores 1 y 2. Estos valores miden la calidad de las relaciones familiares. Entendiendo que estos valores se han obtenido a través de una encuesta realizada a los propios alumnos, el valor de 1 es tan bajo que pensamos que puede deberse a una manipulación por parte de los alumnos en las respuestas. Consideramos que una forma de tratar estos outliers es reemplazarlos por la moda (valor más repetido). En el caso de los valores de 2, los dejaremos como están puesto que no nos parece que puedan considerarse como outliers. Para calcular la moda utilizamos una tabla de frecuencia para contar el número de veces que se repite cada valor:
 
