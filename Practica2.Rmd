@@ -4,10 +4,6 @@ subtitle: "Práctica 2: Limpieza y validación de los datos"
 author: 'Autores: César Fernández Domínguez, Isabel Fernández Esparza'
 date: "Junio 2019"
 output:
-  pdf_document:
-    highlight: zenburn
-    toc: yes
-  word_document: default
   html_document:
     highlight: default
     number_sections: yes
@@ -16,6 +12,10 @@ output:
     toc_depth: 2
     includes:
       in_header: Practica2-header.html
+  word_document: default
+  pdf_document:
+    highlight: zenburn
+    toc: yes
 ---
 
 
@@ -114,6 +114,8 @@ Todas estas preguntas vamos a intentar responderlas con nuestro siguiente análi
 
 ## Integración y selección de los datos de interés a analizar.
 
+Partimos de dos fichero CSV, student-mat.csv y student-por.csv, descargados del repositorio Kaggle. 
+
 ```{r message= FALSE, warning=FALSE}
 sMat=read.table("data/student-mat.csv",sep=",",header=TRUE)
 sPor=read.table("data/student-por.csv",sep=",",header=TRUE)
@@ -127,7 +129,7 @@ sBoth=merge(sMat,sPor,by=c("school","sex","age","address","famsize","Pstatus","M
 # freetime, goout, Dalc, Walc, health, absences, subject
 ```
 
-Ambos ficheros de datos de estudiantes contienen `r dim(sPor)[2]` atributos (columnas). El fichero de estudiantes de la asignatura de portugues contiene `r dim(sPor)[1]` estudiantes y, el de la asignatura de matemáticas `r dim(sMat)[1]` estudiantes. Si mezclamos ambos ficheros para obtener los alumnos que están en ambas asignaturas obtenemos un total de `r dim(sBoth)[1]` estudiantes.
+Ambos ficheros de datos de estudiantes contienen `r dim(sPor)[2]` atributos (columnas). El fichero de estudiantes de la asignatura de portugués contiene `r dim(sPor)[1]` estudiantes y, el de la asignatura de matemáticas `r dim(sMat)[1]` estudiantes. Si mezclamos ambos ficheros, para obtener los alumnos que están en ambas asignaturas, obtenemos un total de `r dim(sBoth)[1]` estudiantes.
 
 Identificamos cada estudiante mediante los atributos indicados por el propietario del juego de datos. Generamos un identificador con la concatenación de estos atributos para cada estudiante. Después, en otro paso, convertiremos este identificador en un valor numérico que identifique a cada estudiante.
 
@@ -136,7 +138,7 @@ sMat$id = paste(sMat$school,sMat$sex,sMat$age,sMat$address,sMat$famsize,sMat$Pst
 sPor$id = paste(sPor$school,sPor$sex,sPor$age,sPor$address,sPor$famsize,sPor$Pstatus,sPor$Medu,sPor$Fedu,sPor$Mjob,sPor$Fjob,sPor$reason,sPor$nursery,sPor$internet, sep="-")
 ```
 
-Creamos una variable "score" que contendrá la media de las tres notas de los tres trimestres por cada alumno y asignatura. Luego, a partir de esta variable, creamos una variable categórica que exprese si un alumno ha aprobado o suspendido la asignatura. Además, creamos una nueva variable categórica que expresará la nota obtenida según la clasificación de cinco niveles utilizada en los grados Erasmus.
+Creamos también una variable "score" que contendrá la media de las tres notas de los tres trimestres para cada alumno y asignatura. Luego, a partir de esta variable, creamos una variable categórica que exprese si un alumno ha aprobado o suspendido la asignatura. Además, creamos una nueva variable categórica que expresará la nota obtenida según la clasificación de cinco niveles utilizada en los grados Erasmus.
  
 ```{r message= FALSE, warning=FALSE}
 sMat$score = rowMeans(subset(sMat, select = c(G1, G2, G3)), na.rm = TRUE)
@@ -166,7 +168,7 @@ sPor$calification[sPor$score<10] <- "F"
 sPor$calification <- as.factor(sPor$calification)
 ```
 
-Vamos a crear un par de variables binarias nuevas para después unir los dos ficheros en un solo dataset:
+Creamos una nueva variable para identificar la asignatura asociada a cada instancia de nuestro dataset:
 
 ```{r message= FALSE, warning=FALSE}
 
@@ -183,7 +185,7 @@ students = transform(students, id=as.numeric(factor(id)))
 students$id = as.factor(students$id)
 ```
 
-Ahora tenemos un dataset con `r dim(students)[1]` instancias y `r dim(students)[2]` atributos para un total de `r length(unique(students$id))` estudiantes de ambas asignaturas.
+Tras estas transformaciones obtenemos un dataset con `r dim(students)[1]` instancias y `r dim(students)[2]` atributos para un total de `r length(unique(students$id))` estudiantes de ambas asignaturas.
 
 Así, nuestro dataset nos queda como:
 ```{r message= TRUE, warning=FALSE}
@@ -208,7 +210,7 @@ Vemos que tenemos muchos más alumnos del colegio Gabriel Pereira (`r dim(studen
 
 ## Limpieza de los datos
 
-#### ¿Los datos tienen contienen ceros o elementos vacíos? ¿Cómo gestionaríamos cada uno de estos casos?
+### ¿Los datos tienen contienen ceros o elementos vacíos? ¿Cómo gestionaríamos cada uno de estos casos?
 
 Primero vamos a comprobar si nuestro juego de datos contiene valores nulos.
 
@@ -217,7 +219,7 @@ Primero vamos a comprobar si nuestro juego de datos contiene valores nulos.
 colSums(is.na(students))
 ```
 
-vemos que no existen valores vacíos.
+vemos que no existen valores nulos.
 
 Ahora vamos a comprobar si existen valores vacíos
 
@@ -225,9 +227,10 @@ Ahora vamos a comprobar si existen valores vacíos
 # Con datos ""
 colSums(students=="")
 ```
+
 Se observa que tampoco existen valores vacíos.
 
-Luego como no existen nulos o elementos vacios no tenemos que hacer nada a este respecto.
+Por lo tanto, como no existen ni valores nulos ni elementos vacios en nuestro dataset no tenemos que hacer nada a este respecto.
 
 Comprobamos, también, la existencia de valores cero. 
 
@@ -235,16 +238,16 @@ Comprobamos, también, la existencia de valores cero.
 colSums(students==0)
 ```
 
-En este caso, vemos que algunos atributos contienen valores cero. Sin embargo, estos valores corresponden a variables numéricas y  comprobamos la validez los mismos.
+En este caso, vemos que algunos atributos contienen valores cero. Sin embargo, estos valores corresponden a variables numéricas y comprobamos la validez los mismos.
 
 Por último, visualizamos el número de valores únicos por cada atributo, comprobando su correspondencia con los datos.
 
 ```{r message= TRUE, warning=FALSE}
-# Valores unicos
+# Valores únicos
 apply(students,2, function(x) length(unique(x)))
 ```
 
-#### Identificación y tratamiento de valores extremos.
+### Identificación y tratamiento de valores extremos.
 
 Los valores extremos o outliers son aquellas observaciones que están fuera de 1,5*IQR, donde IQR es la diferencia entre los cuartiles 75 y 25. Para buscar los outliers en nuestro juego de datos recorremos el dataset para encontrar todas aquellas variables numéricas y hacemos la representación gráfica de los outliers de cada una de ellas.
 
@@ -257,34 +260,29 @@ for(i in 1:ncol(students)) {
 }
 ```
 
-
 Vamos a analizar los diferentes outliers para cada una de las variables numéricas:
 
-Hemos encontrado información interesante para el tratamiento de los outliers en la siguiente dirección web
+- **Variable Age**: Vemos que hay un outlier en el valor 22. En este caso consideramos que este valor no debería eliminarse y deberia tratarse como uno más. Probablemente el hecho de que haya alumnos de 22 años en el mismos curso que alumnos de 18 años estará relacionado con algunas de las variables que queremos analizar, principalmente las notas.
 
-https://www.ugr.es/~fmocan/MATERIALES%20DOCTORADO/Tratamiento%20de%20outliers%20y%20missing.pdf
+- **Variables Medu y Fedu**: No tienen valores extremos.
 
-Variable Age: Vemos que hay un outlier en el valor 22. En este caso consideramos que este valor no debería eliminarse y deberia tratarse como uno más, probablemente el hecho de que haya alumnos de 22 años en el mismos curso que alumnos de 18 años estará relacionado con algunas de las variables que queremos analizar, principalmente las notas.
-
-Variables Medu y Fedu: No tienen valores extremos.
-
-Variable traveltime: Vemos que hay un outlier en el valor 4. Es decir, se dan casos extremos en los que los alumnos tardan 4 horas en llegar al colegio. Vamos a ver cuántas veces se da este valor en nuestra muestra
+- **Variable traveltime**: Vemos que hay un outlier en el valor 4. Es decir, se dan casos extremos en los que los alumnos tardan 4 horas en llegar al colegio. Vamos a ver cuántas veces se da este valor en nuestra muestra
 
 ```{r message= FALSE, warning=FALSE}
 length(boxplot.stats(students[,c("traveltime")])$out)
 ```
 
-Vemos que tenemos 24 alumnos que tardan más de 3 horas en ir al colegio. El tiempo que tardan los alumnos en llegar al colegio no es una varaiable sobre la que queramos realizar hipótesis, como además, el número total de outliers para este atributo es 24, esto representa el 2% de la muestra así que los eliminamos.
+Vemos que tenemos 24 alumnos que tardan más de 3 horas en ir al colegio. El tiempo que tardan los alumnos en llegar al colegio no es una varaiable sobre la que queramos realizar hipótesis. Como además, el número total de outliers para este atributo es 24, esto representa el 2% de la muestra así que los eliminamos.
 
 ```{r message= FALSE, warning=FALSE}
 students = students[students$traveltime<=3,]
 ```
 
-La variable tiempo de estudio studytime vemos que también tiene un outlier en el valor 4. El tiempo de estudio de los alumnos sí que pensamos que es una variable que puede influir en los resultados finales y es una de los atributos que vamos a tener en cuenta en nuestros análisis. No consideramos que el 4 sea un outlier que haya ni que eliminar ni tratar puesto que es un valor aceptable para nuestro estudio, luego con este outlier no hacemos nada.
+- **Variable studytime**: Vemos que, en este caso, también tiene un outlier en el valor 4. El tiempo de estudio de los alumnos sí que pensamos que es una variable que puede influir en los resultados finales y es una de los atributos que vamos a tener en cuenta en nuestros análisis. Sin embargo, no consideramos que el valor 4 sea un outlier que haya ni que eliminar ni tratar, puesto que es un valor aceptable para nuestro estudio. Luego con este outlier no hacemos nada.
 
-Lo mismo pasa con la variable que mide los suspensos, los valores que aparecen representados como outliers son precisamente los valores que pueden ser relevantes para nuestro estudio, luego no hacemos nada con ellos 
+- **Variable failures**: Lo mismo pasa con la variable que mide los suspensos. Los valores que aparecen representados como outliers son precisamente los valores que pueden ser relevantes para nuestro estudio, luego no hacemos nada con ellos.
 
-La variable freetime tiene un outlier en el valor 1, vamos a ver cuántos estudiantes cumplen esta condición. 
+- **Variable freetime**: La variable freetime tiene un outlier en el valor 1, vamos a ver cuántos estudiantes cumplen esta condición. 
 
 ```{r message= FALSE, warning=FALSE}
 students[students$freetime==1,]
@@ -292,7 +290,7 @@ students[students$freetime==1,]
 
 Son 64 alumnos que tienen muy poco tiempo libre entre semana. Puesto que este valor está relacionado con el tiempo de estudio semanal y con las ayudas extrasescolares que puedan recibir los alumnos decidimos mantenerlos también.
 
-Variable famrel: Tenemos outliers en 1 y 2. Estos valores miden la calidad de las relaciones familiares, entendiendo que estos valores se han obtenido a través de una encuesta a los propios alumnos.  El valor de 1 es tan bajo que pensamos que puede deberse a una manipulación por parte de los alumnos en las respuestas. Consideramos que una forma de tratar estos outliers es reemplazarlos por la moda (más repetida). Los valores de 2 los dejaremos como están puesto que no nos parece que puedan considrarse como outliers. Para calcular la moda utilizamos una tabla de frecuencia para contar el número de veces que se repite cada valor:
+- **Variable famrel**:  Tenemos outliers en los valores 1 y 2. Estos valores miden la calidad de las relaciones familiares. Entendiendo que estos valores se han obtenido a través de una encuesta realizada a los propios alumnos, el valor de 1 es tan bajo que pensamos que puede deberse a una manipulación por parte de los alumnos en las respuestas. Consideramos que una forma de tratar estos outliers es reemplazarlos por la moda (valor más repetido). En el caso de los valores de 2, los dejaremos como están puesto que no nos parece que puedan considerarse como outliers. Para calcular la moda utilizamos una tabla de frecuencia para contar el número de veces que se repite cada valor:
 
 ```{r message= FALSE, warning=FALSE}
 table(students$famrel)
@@ -304,13 +302,9 @@ Vemos que el valor más repetido es el 4, luego sustituimos aquellas columnas qu
 students$famrel[students$famrel == 1] <- 4
 ```
 
-En el caso del consumo diario de alcohol, tenemos un outlier en los valores 4 y 5. Sin embargo no tenemos estos outliers en el consumo del fin de semana. Pensamos por tanto que el hecho de que alumnos consuman mucho alcohol durante los días de diario puede estar relacionado con las notas que obtengan, así que vamos a dejar estos valores.
+- **Variables Dalc y Walc**: En el caso del consumo diario de alcohol, tenemos un outlier en los valores 4 y 5. Sin embargo, no tenemos estos outliers en el consumo del fin de semana. Pensamos, por tanto, que el hecho de que alumnos consuman mucho alcohol durante los días de diario puede estar relacionado con las notas que obtengan, así que vamos a dejar estos valores.
 
-```{r message= FALSE, warning=FALSE}
-length(boxplot.stats(students[,c("Dalc")])$out)
-```
-
-Para el caso de las ausencias, nos interesa saber cuántos outliers tenemos y qué valores toman para poder analizar cómo tratarlos.
+- **Variable absences**: Para el caso de las ausencias, nos interesa saber cuántos outliers tenemos y qué valores toman para poder analizar cómo tratarlos.
 
 ```{r message= FALSE, warning=FALSE}
 length(boxplot.stats(students[,c("absences")])$out)
@@ -318,8 +312,8 @@ boxplot.stats(students[,c("absences")])$out
 students[students$absences>=40,]
 ```
 
-A la vista de los resultados vemos que tenemos 54 outliers en las ausencias, y que los valores que toman en estos outliers son  16 16 25 54 18 26 20 18 16 16 56 24 18 28 22 16 18 20 16 21 75 22 30 19 20 38 18 20 22 40 23 16 17 16 16 24 22 16 32 
-Nos parece que los valores que están en un intervalo de (10,30) son admisibles, sin embargo, vemos que hay valores que pasan de 40 que podrían eliminarse.
+A la vista de los resultados vemos que tenemos 54 outliers en las ausencias, y que los valores que toman en estos outliers son: 16 16 25 54 18 26 20 18 16 16 56 24 18 28 22 16 18 20 16 21 75 22 30 19 20 38 18 20 22 40 23 16 17 16 16 24 22 16 32 
+Nos parece que los valores que están en un intervalo de (10,30) son admisibles, sin embargo, vemos que hay valores que pasan de 40, que podrían eliminarse.
 
 En total, vamos a contar cuántos datos tenemos para ausencias mayores o iguales que 40
 
@@ -327,23 +321,21 @@ En total, vamos a contar cuántos datos tenemos para ausencias mayores o iguales
 students[students$absences>=40,]
 ```
 
-Vemos que tenemos 4 valores, luego decidimos eliminarlos de nuestro objeto de estudio
+Vemos que tenemos 4 valores, luego decidimos eliminarlos de nuestro conjunto de datos.
 
 ```{r message= FALSE, warning=FALSE}
 students = students[students$absences<40,]
-glimpse(students)
 ```
 
-Las columnas relativas a las notas van a ser principalmente las que sean objeto de estudio. Tenemos outliers en notas que son perfectamente posibles, luego no vamos a eliminarlo puesto que pensamos que estos valores afectarán a los estudios e hipótesis que queramos estudiar.
-
+- **Variables G1, G2, G3 y score**: Las columnas relativas a las notas van a ser, principalmente, las que sean objeto de nuestro estudio. En este caso, tenemos outliers en notas que son perfectamente posibles, luego no vamos a eliminarlo puesto que pensamos que estos valores afectarán a los estudios e hipótesis que queramos analizar.
 
 ## Análisis de los datos
   
 ### Selección de los grupos de datos que se quieren analizar/comparar (planificación de los análisis a aplicar).
 
-En este apartado, vamos a realizar una selección de atributos que podrán ser de utilidad para los análisis posteriores en función de los objetivos iniciales. 
+En este apartado, vamos a realizar una selección de atributos que podrán ser de utilidad para los análisis posteriores. 
 
-Por ejemplo, podemos discreminar nuestros datos según su género: hombre o mujer (male o female):
+Por ejemplo, podemos discriminar nuestros datos según su género: hombre o mujer (male o female):
 
 ```{r message= TRUE, warning=FALSE}
 # Agrupación por sexo de los estudiantes
@@ -369,7 +361,7 @@ students.schoolsup <- students[students$schoolsup == "yes",]
 students.noschoolsup <- students[students$schoolsup == "no",]
 ```
 
-También vamos a realizar una agrupación de los estudiantes dependiendo del número de horas que dediquen semanalmente al estudio. En este caso, agrupamos por aquellos que dedican 3 o más horas semanalmente al estudio y aquellos que dedican menos de 3 horas semanales.
+También, vamos a realizar una agrupación de los estudiantes dependiendo del número de horas que dediquen semanalmente al estudio. En este caso, agrupamos por aquellos que dedican 3 o más horas semanalmente al estudio y aquellos que dedican menos de 3 horas semanales.
 
 ```{r message= TRUE, warning=FALSE}
 # Agrupación por tiempo dedicado al estudio
@@ -392,7 +384,7 @@ students.mayores <- students[students$age >= 16,]
 students.menores <- students[students$age < 16,]
 ```
 
-Estas agrupaciones de los datos de nuestro dataset original no serán todas utilizada en los siguientes análisis. O, como en la siguiente sección, esta agrupación será realizada de forma gráfica.
+Estas agrupaciones de los datos de nuestro dataset original no serán todas utilizadas en los siguientes análisis. O, como veremos en la siguiente sección, esta agrupación tambián la podemos realizar de forma visual.
 
 ### Análisis visual
 
@@ -416,7 +408,7 @@ fig2 = ggplot(students,aes(x=studytime,fill=calification))+geom_bar()+ylab("Frec
 grid.arrange(fig1, fig2, ncol=2)
 ```
 
-Vemos como, a medida que se aumenta el número de horas semanales de estudio, aumenta también la probabilidad de obtener una nota alta. Vemos como, a pesar de dedicar más de 4 horas semanales al estudio, el porcentaje de suspensos es mayor que aquellos que solamente dedican 3 horas semanales. Lo cual confirma lo que siempre se dice que con dedicar un poco de tiempo diariamente al estudio es suficiente para sacar buenas notas. También observamos que el número de alumnos que dedican más horas al estudio es mucho menor que aquellos que dedican más horas.
+Vemos como, a medida que se aumenta el número de horas semanales de estudio, aumenta también la probabilidad de obtener una nota más alta. Vemos como, a pesar de dedicar más de 4 horas semanales al estudio, el porcentaje de suspensos es mayor que el de aquellos que solamente dedican 3 horas semanales. Lo cual confirma lo que siempre se dice que con dedicar un poco de tiempo diariamente al estudio es suficiente para sacar buenas notas. También observamos que el número de alumnos que dedican más horas al estudio es mucho menor que aquellos que dedican más horas.
 
 Si diferenciamos entre chicos y chicas:
 
@@ -438,7 +430,7 @@ fig2 = ggplot(students,aes(x=schoolsup,fill=calification))+geom_bar()+ylab("Frec
 grid.arrange(fig1, fig2, ncol=2)
 ```
 
-En primer lugar, vemos que el número de alumnos que recibe ayuda extra es muy inferior a los que no la reciben. Seguramente esta ayuda solamente sea dada a aquellos alumnos que, por diversas razones, se vea que necesitan un soporte especial por parte del colegio (en general, mal estudiante). Vemos, que, a pesar de recibir ayuda extra en el colegio, practicamente el 70% de estos estudiantes suspende. Sí hay un pequeño porcentaje que aprueba con buena cualificación.
+En primer lugar, vemos que el número de alumnos que recibe ayuda extra es muy inferior a los que no la reciben. Seguramente esta ayuda solamente sea dada a aquellos alumnos que, por diversas razones, se vea que necesitan un soporte especial por parte del colegio (en general, malos estudiantes). Vemos que, a pesar de recibir ayuda extra en el colegio, practicamente el 70% de estos estudiantes suspende. Sí hay un pequeño porcentaje que aprueba con buena cualificación.
 
 Diferenciando entre chicos y chicas:
 
@@ -458,7 +450,7 @@ fig2 = ggplot(students,aes(x=paid,fill=calification))+geom_bar()+ylab("Frecuenci
 grid.arrange(fig1, fig2, ncol=2)
 ```
 
-En estas gráficas vemos como un porcentaje pequeño (alrededor del 20%) de los estudiantes recibe clases particulares. Vemos que el porcentaje de aprobados es mayor en aquellos que van a clases particulares, pero no significativamente. Además es mayor el porcentaje de aprobados con nota más alta en aquellos alumnos que no reciben clases particulares. Posiblemente, porque el hecho de recibir clases particules se perciba más en estudiantes que necesitan un pequeño soporte extra.
+En estas gráficas vemos como un porcentaje pequeño (alrededor del 20%) de los estudiantes recibe clases particulares. Vemos, también, que el porcentaje de aprobados es mayor en aquellos alumnos que van a clases particulares, pero no significativamente. Además es mayor el porcentaje de aprobados con nota más alta en aquellos alumnos que no reciben clases particulares. Posiblemente, porque el hecho de recibir clases particules se aplique más a estudiantes que necesitan un pequeño soporte extra.
 
 De igual forma que en otros casos, si diferenciamos entre chicos y chicas, tenemos:
 
@@ -468,7 +460,7 @@ fig2 = ggplot(students,aes(x=paid,fill=calification))+geom_bar()+ylab("Frecuenci
 grid.arrange(fig1, fig2, ncol=2)
 ```
 
-En este caso no se aprecian diferencias significativas entre chicos y chicas. Quizá, podemos observar que, la mejora, en porcentage, entre aquellos estudiantes que van a clases particulares y los que no, es mayor en las chicas.
+En este caso no se aprecian diferencias significativas entre chicos y chicas. Quizá, podemos observar que, la mejora, en porcentaje, entre aquellos estudiantes que van a clases particulares y los que no, es mayor en las chicas.
 
 Por último, visualizamos la distribución de las calificaciones de los estudiantes dependiendo de si reciben ayuda por parte de su familia o no:
 
@@ -478,7 +470,7 @@ fig2 = ggplot(students,aes(x=famsup,fill=calification))+geom_bar()+ylab("Frecuen
 grid.arrange(fig1, fig2, ncol=2)
 ```
 
-En este caso, es resaltable que el número de estudiantes que recibe ayuda de su familia es bastante mayor de los que no la reciben. Sin embargo, los resultados académicos con equipables (gráfica de porcentajes).
+En este caso, es resaltable que el número de estudiantes que recibe ayuda de su familia es bastante mayor que los que no la reciben. Sin embargo, los resultados académicos son equiparables (gráfica de porcentajes).
 
 Diferenciando entre chicos y chicas:
 
@@ -488,11 +480,15 @@ fig2 = ggplot(students,aes(x=famsup,fill=calification))+geom_bar()+ylab("Frecuen
 grid.arrange(fig1, fig2, ncol=2)
 ```
 
-Son casi el doble las chicas reciben ayuda de sus familiares de las que no. En los chicos está más equilibrado. En cuando a los resultados académicos, vemos una ligera mejoría, ligerísima, entre las chicas que reciben ayuda y las que no. 
+Son casi el doble las chicas que reciben ayuda de sus familiares de las que no. En los chicos está más equilibrado. En cuando a los resultados académicos, vemos una ligera mejoría, ligerísima, entre las chicas que reciben ayuda y las que no. 
 
 ### Comprobación de la normalidad y homogeneidad de la varianza
-Para la comprobación de que los valores que toman nuestras variables cuantitativas provienen de una población distribuida normalmente, utilizaremos la prueba de normalidad de Anderson-Darling.
-Así, se comprueba que para que cada prueba se obtiene un p-valor superior al nivel de significación prefijado α	$alpha$ = 0,05. Si esto se cumple, entonces se considera que la variable en cuestión sigue una distribución normal.
+
+Para la comprobación de que los valores que toman nuestras variables cuantitativas provienen de una población distribuida normalmente, aplicaremos distintas pruebas de normalidad, como son: el test de Anderson-Darling, el test de Kolmogorov-Smirnov, el test de Shapiro y el test de Cramer-von Mises.
+
+Así, para cada uno de los tests, se comprueba que el valor que se obtiene de *p*. Si este valor es superior a nivel de significación prefijado α = 0,05, se considera que la variable en cuestión sigue una distribución normal.
+
+Definimos una función para aplicar facilmente los cuatro test de normalidad sobre cada variable numérica:
 
 ```{r message= TRUE, warning=FALSE}
 # Tests de normalidad 
@@ -511,6 +507,8 @@ normTest <- function(data, name, alpha = 0.05) {
 }
 ```
 
+El siguiente código ejecuta los test de normalidad para cada una de las variables numéricas de nuestro dataset:
+
 ```{r message= TRUE, warning=FALSE}
 col.names = colnames(students)
 cat("Distribucion normal: \n")
@@ -522,11 +520,15 @@ for (i in 1:ncol(students)) {
 
 ```
 
-Luego a la vista de los resultados obtenidos en los diferentes tests de normalidad, vemos que ninguna de las variables numéricas que tenemos en nuestro juego de datos sigue una distribución normal con respecto al conjunto total de los datos.
+Luego, a la vista de los resultados obtenidos en los diferentes tests de normalidad, vemos que ninguna de las variables numéricas que tenemos en nuestro juego de datos sigue una distribución normal con respecto al conjunto total de los datos.
 
-Ahora vamos a ver si estas variables numéricas siguen una distribución normal en cada uno de los grupos que hemos separado para realizar nuestro análisis. Es decir, vamos a ver si:
+Ahora vamos a ver si estas variables numéricas siguen una distribución normal en cada uno de los grupos que hemos separado para realizar nuestro análisis. Es decir, vamos a ver si: 
 
-Hemos visto que las notas registradas no siguen una distrubución normal para el conjunto total de los datos pero, seguirán una distribución normal en el conjunto de hombres o de mujeres? ¿Y en el caso de que el tiempo de estudio sea de más de 3 horas o de menos? ¿Y de los alumnos mayores de 16 años o menores? ¿Y si separamos los datos entre alumnos que reciben clases particulares pagadas y no? ¿Y si reciben ayuda extraescolar de familia o en el colegio?
+- ¿seguirán las notas una distribución normal en el conjunto de hombres o de mujeres? 
+- ¿Y en el caso de que el tiempo de estudio sea de más de 3 horas o de menos? 
+- ¿Y de los alumnos mayores de 16 años o menores? 
+- ¿Y si separamos los datos entre alumnos que reciben clases particulares pagadas y no? 
+- ¿Y si reciben ayuda extraescolar de familia o en el colegio?
 
 ```{r message= TRUE, warning=FALSE}
 normTest(students.female[,c("score")], "score~female")
@@ -543,64 +545,33 @@ normTest(students.famsup[,c("score")], "score~famsup")
 normTest(students.nofamsup[,c("score")], "score~nofamsup")
 ```
 
-Según los resultados obtenidos vemos que, para los alumnos menores de 16 años, las notas medias sí siguen una distribución normal, y para el caso de los que reciben clases particulares pagadas también así como para aquellos que reciben apoyo educativo adicional . Para el caso de las alumnas femeninas,y de los grupos que reciben o no reciben ayuda extraescolar familiar, el test de Kolmogorov sí indica que las variables de notas medias siguen una distribución normal
+Según los resultados obtenidos vemos que, para los alumnos menores de 16 años, las notas medias sí siguen una distribución normal, y para el caso de los que reciben clases particulares pagadas también, así como, para aquellos que reciben apoyo educativo adicional . Para el caso de las alumnas femeninas, y de los grupos que reciben o no ayuda extraescolar o familiar, el test de Kolmogorov sí indica que las variables de notas medias siguen una distribución normal, pero el resto de test indican lo contrario.
 
-> Se utiliza el test de Fligner-Killeen, al no tener normalidad en los datos. 
-> Se utilizaría el test Levene cuando hay normalidad en los datos.
-
-Vamos a estudiar ahora la homogeneidad de la varianza para los diferentes grupos que queremos analizar. En primer lugar vamos a analizar la homocedasticidad entre niños y niñas. Vimos en el apartado anterior que esta variable no sigue una distribución normal para estos grupos, luego para realizar nuestro análisis utilizaremos el test de Fligner-Killeen.
-
+Vamos a estudiar ahora la homogeneidad de la varianza para los diferentes grupos que queremos analizar. En primer lugar vamos a analizar la homocedasticidad entre niños y niñas. Vimos en el apartado anterior que esta variable no sigue una distribución normal para estos grupos, luego, para realizar nuestro análisis utilizaremos el test de Fligner-Killeen.
 
 ```{r message= TRUE, warning=FALSE}
 fligner.test(score ~ sex, data = students)
 ```
 
-Vemos, por tanto, que el valor de p obtenido (p-value) es mayor que 0,05 luego esto indica que no se observa diferencia significativa entre las varianzas por grupos de sexo.
+Vemos, en este caso, que el valor de p obtenido (p-value) es mayor que 0,05. Luego, esto indica que no se observa diferencia significativa entre las varianzas por grupos de sexo.
 
-Vamos a aplicar el test de Levene para ver que resultado obtenemos en este caso:
-
-
-```{r message= TRUE, warning=FALSE}
-leveneTest(studytime ~ sex, data = students)
-```
-
-Para este caso también se cumpliría que el valor de p es mayor de 0,05 luego también indicaría que no existe diferencia significativa entre las varianzas
-
-Veamos ahora cómo se distribuye la varianza para la media escolar entre los grupos de alumnos que reciben clases privadas de las asignaturas. Nuevamente, como estos valores no siguen una distribución normal, utilizaremos el test de Fligner-Killeen
+Veamos ahora cómo se distribuye la varianza para la media escolar entre los alumnos clasificados en función de si reciben clases particulares o no. Nuevamente, como estos valores no siguen una distribución normal, utilizaremos el test de Fligner-Killeen
 
 ```{r message= TRUE, warning=FALSE}
 fligner.test(score ~ paid, data = students)
 ```
 
+Vemos que el valor de p es mayor de 0.05, luego, podemos concluir que las varianzas están homogéneamente distrubuidas.
 
-Nuevamente, vemos que el valor de p es mayor de 0.05, luego podemos concluir que las varianzas están homogéneamente distrubuidas.
-
-Si aplicamos es test de Levene
-
-```{r message= TRUE, warning=FALSE}
-leveneTest(score ~ paid, data = students)
-
-```
-
-Vemos también el mismo resultado
-
-Si ahora analizamos las distribuciones atendiendo a si reciben clases estraescolares o ayudas de sus padres, vamos a ver qué obtenemos, nuevamente aplicando el test de Fligner-Killeen por la falta de normalidad en nuestros datos.
+Si ahora analizamos las distribuciones atendiendo a si reciben clases extraescolares o ayudas de sus padres, vamos a ver qué obtenemos. Igual que antes, aplicamos el test de Fligner-Killeen por la falta de normalidad en nuestros datos.
 
 ```{r message= TRUE, warning=FALSE}
 fligner.test(score ~ schoolsup, data = students)
 ```
 
-En este caso vemos que el valor de p obtenido es menor que 0,05 luego vemos que la variable score (que recoge las medias de todas las notas obtenidas) presenta varianzas estadísticamente diferentes para los grupos de alumnos que reciben ayuda extraescolar o no en el colegio.
+En este caso, vemos que el valor de p obtenido es menor que 0,05 luego, vemos que la variable score (que recoge las medias de todas las notas obtenidas) presenta varianzas estadísticamente diferentes para los grupos de alumnos que reciben ayuda extra en el colegio.
 
-Vamos a ver qué resultados obtenemos para este caso utilizando el test de Levene
-
-```{r message= TRUE, warning=FALSE}
-leveneTest(score ~ schoolsup, data = students)
-```
-
-Nuevamente el valor es menor que 0.05
-
-Analicemos ahora cómo se distribuye la varianza de las notas medias para los grupos de alumnos que reciben ayuda suplementaria en casa. Nuevamente, usamos el test de Fligner-Killeen
+Pasamos ahora a analizar cómo se distribuye la varianza de las notas medias para los grupos de alumnos que reciben ayuda suplementaria en casa. Usando, nuevamente, el test de Fligner-Killeen obtenemos:
 
 ```{r message= TRUE, warning=FALSE}
 fligner.test(score ~ famsup, data = students)
@@ -611,24 +582,20 @@ En este caso, se observa que el valor de p (p-value) es mayor de 0,05 luego pode
 Analicemos cómo se distribuye la varianza de las notas medias por los diferentes grupos de edad, entre los alumnos menores de 16 y los mayores de 16
 
 ```{r message= TRUE, warning=FALSE}
-a <- students[students$age < 16,"score"]
-b <- students[students$age >= 16,"score"]
-fligner.test(x = list(a,b))
+fligner.test(x = list(students.menores$score,students.mayores$score))
 ```
 
-El valor de p que obtenemos es menor que 0.05 lyego rechazamos la hipótesis de homocedasticidad y concluimos que la variable score tiene varianzas estadísticamente diferentes para los alumnos menores de 16 y los mayores de 16.
+El valor de p que obtenemos es menor que 0.05 luego, rechazamos la hipótesis de homocedasticidad y concluimos que la variable score tiene varianzas estadísticamente diferentes para los alumnos menores de 16 y los mayores de 16.
 
-Por último estudiaremos la distribución de la varianza para los grupos de alumnos que estudian más o menos de 3 horas.
+Por último, estudiaremos la distribución de la varianza para los grupos de alumnos que estudian más o menos de 3 horas.
 
 ```{r message= TRUE, warning=FALSE}
-a <- students[students$studytime < 3,"score"]
-b <- students[students$studytime >= 3,"score"]
-fligner.test(x = list(a,b))
+fligner.test(x = list(students.nostudytime$score,students.studytime$score))
 ```
 
 El valor de p es mayor de 0.05 luego podemos concluir que sí existe homogeneidad de la varianza
 
-Vamos a representar los histogramas de estas variables
+En las siguientes graficas mostramos como se traducen estos resultados visualmente. Para lo cual representamos las gráficas de quantile-quantile y los histogramas para cada una de nuestras variables.
 
 ```{r message= TRUE, warning=FALSE}
 plotNormHistogram <- function(data, name) {
@@ -638,9 +605,7 @@ plotNormHistogram <- function(data, name) {
       main=paste("Histogram for ", name), 
       xlab=name, freq = FALSE)
 }
-```
 
-```{r message= TRUE, warning=FALSE}
 par(mfrow=c(2,2))
 for(i in 1:ncol(students)) {
   if (is.numeric(students[,i])){
@@ -648,6 +613,9 @@ for(i in 1:ncol(students)) {
   }
 }
 ```
+
+Y para la variables *score* de cada una de los grupos de estudio que hemos considerado.
+
 ```{r message= TRUE, warning=FALSE}
 par(mfrow=c(2,2))
 plotNormHistogram(students.female[,c("score")], "score~sex")
@@ -658,12 +626,13 @@ plotNormHistogram(students.mayores[,c("score")], "score~mayores")
 plotNormHistogram(students.menores[,c("score")], "score~menores")
 ```
 
-
 ## Pruebas estadísticas
 
-Aplicación de pruebas estadísticas para comparar los grupos de datos. En función de los datos y el objetivo del estudio, aplicar pruebas de contraste de hipótesis, correlaciones, regresiones, etc. Aplicar al menos tres métodos de análisis diferentes.
+En los siguientes apartados realizamos distintas pruebas estadísticas sobre nuestros conjuntos de datos. Hemos aplicado pruebas de contraste de hipótesis, correlaciones y regresiones para intentar responder a las preguntas que nos planteamos al inicio de este estudio.
 
 ### Correlaciones
+
+La siguiente gráfica muestra la correlación entre las distintas variables de notas:
 
 ```{r message= TRUE, warning=FALSE}
 color=diverge_hcl(length(students$calification))[rank(students$calification)]
@@ -671,7 +640,7 @@ pairs(~ G1 + G2 + G3 + score, data = students, pch = 19, cex = 0.5, lower.panel 
 title("Correlación notas")
 ```
 
-Luego, a la vista de estos diagramas, parece intuirse que existe una posible relación lineal entre las notas de cada trimestre.
+Luego, a la vista de estos diagramas, parece intuirse que existe una posible relación lineal entre las notas de cada trimestre y, con la media. Lo cual es evidente, ya que esta ha sido obtenida a partir de las otras tres.
 
 Como ya hemos visto que estas variables no siguen una distribución normal, vamos a analizar la correlación utilizando el test de Spearman
 
@@ -684,10 +653,9 @@ cor(x = students$G2, y = log10(students$score), method = "spearman")
 cor(x = students$G3, y = log10(students$score), method = "spearman")
 ```
 
-Vemos que para los 4 casos el grado de correlación es alto (mayor que 0,8). Pero para poder realmente considerar que existe correlación entre las variables debemos calcular la significancia
+Vemos que para los 6 casos el grado de correlación es alto (mayor que 0,8). Pero para poder realmente considerar que existe correlación entre las variables debemos calcular la significancia.
 
 ```{r message= FALSE, warning=FALSE}
-# https://rpubs.com/Joaquin_AR/223351
 cor.test(x = students$G1,
          y = log10(students$G2),
          alternative = "two.sided",
@@ -725,7 +693,7 @@ cor.test(x = students$G3,
          method      = "spearman")
 ```
 
-Vemos que, para todos los casos, los coeficientes de correlación son significativos puesto que p está próximo a 0 en los tres casos.
+Vemos que, para todos los casos, los coeficientes de correlación son significativos, puesto que p está próximo a 0 en los seis casos.
 
 ### Pruebas de hipótesis
 
@@ -733,17 +701,17 @@ En esta sección, vamos a intentar responder a algunas de las preguntas que se p
 
 #### ¿Las chicas sacan mejores notas que los chicos?
 
-En la primera pregunta que nos planteabamos, de si las chicas sacan mejores notas que los chicos, la hipótesis consiste en considerar si las calificaciones obtenidas por las chicas y los chicos tienen idéntica distribución.
+En la primera pregunta que nos planteabamos, de si las chicas sacan mejores notas que los chicos, la hipótesis consiste, en este caso, en considerar si las calificaciones obtenidas por las chicas y los chicos tienen idéntica distribución.
 
 ```{r message= TRUE, warning=FALSE}
 wilcox.test(score ~ sex, data = students)
 ```
 
-En este caso, vemos que p-value > 0.05, por lo tanto debemos decir que las calificaciones obtenidas por los chicas son estadísticamente comparables a las obtenidas por los chicos. Por lo tanto, no podemos decir que las chicas sacan mejores notas que los chicos.
+Por lo tanto, como vemos que p-value > 0.05 concluimos que las calificaciones obtenidas por los chicas son estadísticamente comparables a las obtenidas por los chicos. Consecuentemente, no podemos afirmar que las chicas sacan mejores notas que los chicos.
 
 #### ¿Quien más tiempo dedica al estudio saca mejores notas?
 
-En esta ocasión queremos comparar los grupos de estudiantes que estudian durante bastante tiempo semanal y los que dedican menos tiempo al estudio.
+En esta ocasión queremos comparar entre los estudiantes que dedican bastante tiempo semanalmente al estudio, y los que dedican menos tiempo.
 
 Para esto, lo primero que vamos a hacer es crear una nueva variable categórica que nos permita distinguir entre los dos grupos mencionados arriba.
 
@@ -759,7 +727,7 @@ Aplicando, ahora, la prueba sobre estos grupos de estudiantes obtenemos:
 ```{r message= TRUE, warning=FALSE}
 wilcox.test(score ~ studytime2g, data = students)
 ```
-El valor de p-value obtenido es menor de 0.05. Por lo tanto, concluimos que ambos grupos de estudiantes presentan distribuiones muy distintas. Es decir, existe diferencias significativas en la notas obtenidas entre los estudiantes que dedican muchas horas al estudio y las que dedican pocas.
+El valor de p-value obtenido es menor de 0.05. Por lo tanto, concluimos que ambos grupos de estudiantes presentan distribuiones muy distintas. Es decir, existe diferencias significativas en la notas obtenidas entre los estudiantes que dedican muchas horas al estudio y los que dedican pocas.
 
 Si ahora comparamos entre los grupos de estudiantes que dedican 3 horas semanales y los que dedican 4 o más, vemos que el valor p-value es igual a 0.683. Es decir, es mayor que 0.05. Por lo tanto, siguen una misma distribución.
 
@@ -777,15 +745,15 @@ La primera prueba la aplicamos sobre los estudiantes que van a clases particular
 wilcox.test(score ~ paid, data = students)
 ```
 
-En este caso, el valor de *p* es mayor, aunque por muy poco, a 0.05. Por lo tanto, diremos que no existe diferencia estadística, en las notas, entre los alumnos que van a clases particulares y los que no.    
+En este caso, el valor de *p* es mayor, aunque por muy poco, a 0.05. Por lo tanto, diremos que no existe diferencia estadística en las notas, entre los alumnos que van a clases particulares y los que no.    
 
-En lo que se refiere a la si reciben ayuda extra por parte del colegio o no, tenemos que...
+En lo que se refiere a la distribución de las notas de los alumnos en función de si reciben ayuda extra por parte del colegio o no, ejecutando el test:
 
 ```{r message= TRUE, warning=FALSE}
 wilcox.test(score ~ schoolsup, data = students)
 ```
 
-... existe diferencia significativa entre los alumnos que reciben ayuda extra y los que no (tal y como también vimos en el análisis visual de los datos).
+Entonces, puesto que p < 0.05, tenemos que existe diferencia significativa entre los alumnos que reciben ayuda extra y los que no (tal y como también vimos en el análisis visual de los datos).
 
 Por último, aplicaremos esta prueba también sobre los grupos de estudiantes que son ayudados por su familia en casa y los que no.
 
@@ -793,13 +761,13 @@ Por último, aplicaremos esta prueba también sobre los grupos de estudiantes qu
 wilcox.test(score ~ famsup, data = students)
 ```
 
-Según el resultado obtenido, no podemos decir que exista diferencia significativa, en las notas finales, entre los estudiantes que son ayudados por su familia en casa y los que no.
+Según el resultado obtenido, no podemos decir que exista diferencia significativa en las notas finales, entre los estudiantes que son ayudados por su familia en casa y los que no.
 
 ### Modelo lineal
 
 Tal y como hemos visto, existe una fuerte correlación entre las distintas variables que se refieren a las calificaciones y la nota final. Por lo tanto, vamos a utilizar estas variables para obtener un modelo lineal que nos permita predecir las notas de los estudiantes a partir de algunas de las otras variables.
 
-En primer lugar, dividiremos nuestros datos entre un grupo de entrenamiento y otro de prueba, que nos permitirá evaluar la precisión de las predicciones realizadas por nuestro modelo.
+En primer lugar, dividiremos nuestros datos en un conjunto de datos de entrenamiento y otro de datos de prueba. El primero nos servirá para generar los distintos modelos y, el segundo, nos permitirá evaluar la precisión de las predicciones realizadas por nuestro modelo.
 
 ```{r message= TRUE, warning=FALSE}
 sample_size = floor(0.90*nrow(students)) # 90% train - 10% test
@@ -808,10 +776,9 @@ train = students[train_idx,]
 test = students[-train_idx,]
 ```
 
-Definiremos varios modelos utilizando distintas variables relacionadas con la calificación final (*score*) para finalmente elegir aquel que mejores resultados nos dé.
+Definiremos varios modelos utilizando distintas variables relacionadas con la calificación final (*score*) para, finalmente elegir uno que utilizaremos para predecir la nota final para los estudiantes en nuestro conjunto de test.
 
 ```{r message= TRUE, warning=FALSE}
-
 # Generación de varios modelos
 modelo1 <- lm(score ~ G1 + G2 + G3, data = train)
 modelo2 <- lm(score ~ G1 + G2, data = train)
@@ -840,9 +807,9 @@ colnames(tabla.coeficientes) <- c("Modelo", "R^2")
 tabla.coeficientes
 ```
 
-Esta claro, según confirmamos por los resultados obtenidos, que si utilizamos las notas de los tres trimestres para predecir la calificación final el resultado será exacto, ya que esta nota se obtiene a partir de un calculo directo sobre las otras tres (la media). Ignorando este caso, analizamos el resultado obtenido para los otros modelos, en los cuales se quiere predecir la nota final utilizando alguna otra variable o conjunto de variables.
+Esta claro, según confirmamos por los resultados obtenidos en esta tabla, que si utilizamos las notas de los tres trimestres para predecir la calificación final el resultado será exacto, ya que esta nota se obtiene a partir de un calculo directo sobre las otras tres (la media). Ignorando este caso, analizamos el resultado obtenido para los otros modelos, en los cuales se quiere predecir la nota final utilizando alguna otra variable o conjunto de variables.
 
-De la tabla anterior, elegimos el modelo 8, que nos permitiría predecir la nota final a partir de la nota del segundo trimestre y de evaluar las variables *studytime* y *schoolsup*. Utilizando este modelo y el conjunto de datos de test que habiamos reservado podemos predecir las notas finales para estos estudiantes.
+De la tabla anterior, elegimos el modelo 8, que nos permitiría predecir la nota final a partir de la nota del segundo trimestre y las variables categóricas *studytime* y *schoolsup*. Utilizando este modelo y el conjunto de datos de test que habiamos reservado podemos predecir las notas finales para estos estudiantes.
 
 ```{r message= TRUE, warning=FALSE}
 y_predict = predict(modelo8, test)
@@ -858,53 +825,50 @@ ggplot(data, aes(x=sample, y=pred)) +
     geom_point()
 ```
 
-## Regresión logística
-Vamos a utilizar regresión logística para intentar averiguar qué variable de las categóricas con las que hemos estado trabajando puede predecirse mejor a partir de la nota media dle curso. Vamos a generar modelos de regresión logística para distintas variables dicotómicas, y vamos a ver cuál de ellos es mejor.
+### Regresión logística
+
+Vamos a utilizar regresión logística para intentar averiguar qué variable, de las categóricas con las que hemos estado trabajando, puede predecirse mejor a partir de la nota media del curso. Vamos a generar modelos de regresión logística para distintas variables dicotómicas, y veremos cuál de ellos es mejor.
 
 Nos centraremos en las siguientes variables:
 
-- Sexo: podemos predecir el sexo del alumno en función de la nota?
-- SchoolSup: podemos predecir si el alumno ha tenido ayuda en la escuela en función de la nota media?
-- famSup: podemos predecir si el alumno ha tenido ayuda en casa en función de la nota media?
-- higher: Podemos predecir si el alumno querrá seguir estudiando en función de la nota media obtenida?
+- Sexo: ¿podemos predecir el sexo del alumno en función de la nota?
+- SchoolSup: ¿podemos predecir si el alumno ha tenido ayuda en la escuela en función de la nota media?
+- famSup: ¿podemos predecir si el alumno ha tenido ayuda en casa en función de la nota media?
+- higher: ¿podemos predecir si el alumno querrá seguir estudiando en función de la nota media obtenida?
 
-
-
-
-En primer lugar vamos a representar las observaciones para cada uno de estos casos para poder intuir gráficamente si la varibale escogida (la media de las notas: score) está relacionada con la variable respuesta (obtienen ayuda escolar) y puede considerarse que es un buen predictor
+En primer lugar, representamos las observaciones para cada uno de estos casos para poder intuir gráficamente si la variable escogida (la media de las notas: score) está relacionada con la variable respuesta (cualquiera de las anteriores) y, por lo tanto, puede considerarse que es un buen predictor.
 
 ```{r message= FALSE, warning=FALSE}
-par(mfrow=c(2,2))
-ggplot(data = students, aes(x = sex, y = score, color = sex)) +
+fig1 = ggplot(data = students, aes(x = sex, y = score, color = sex)) +
   geom_boxplot(outlier.shape = NA) +
   geom_jitter(width = 0.1) +
   theme_bw() +
   theme(legend.position = "null")
 
-ggplot(data = students, aes(x = schoolsup, y = score, color = schoolsup)) +
+fig2 = ggplot(data = students, aes(x = schoolsup, y = score, color = schoolsup)) +
   geom_boxplot(outlier.shape = NA) +
   geom_jitter(width = 0.1) +
   theme_bw() +
   theme(legend.position = "null")
 
-ggplot(data = students, aes(x = famsup, y = score, color = famsup)) +
+fig3 = ggplot(data = students, aes(x = famsup, y = score, color = famsup)) +
   geom_boxplot(outlier.shape = NA) +
   geom_jitter(width = 0.1) +
   theme_bw() +
   theme(legend.position = "null")
 
-
-ggplot(data = students, aes(x = higher, y = score, color = higher)) +
+fig4 = ggplot(data = students, aes(x = higher, y = score, color = higher)) +
   geom_boxplot(outlier.shape = NA) +
   geom_jitter(width = 0.1) +
   theme_bw() +
   theme(legend.position = "null")
+
+grid.arrange(fig1, fig2, fig3, fig4,ncol=2)
 ```
 
-A la vista de las gráficas, parece que en el único caso en el que se aprecian diferencias significativas en las notas es en el caso en el que los estudiantes quieren seguir estudiando.
+A la vista de las gráficas, parece que en el único caso en el que se aprecian diferencias significativas en las notas es en el caso en el que los estudiantes quieren seguir estudiando (variable *higher*).
 
-
-Ahora vamos a generar los modelos para cada una de ellas a ver qué obtenemos
+Ahora vamos a generar los modelos para cada una de ellas y ver qué obtenemos
 
 ```{r message= FALSE, warning=FALSE}
 m1 <- glm(sex ~ score, data = students, family = "binomial")
@@ -916,26 +880,25 @@ summary(m2)
 m3 <- glm(famsup ~ score, data = students, family = "binomial")
 summary(m3)
 
-
 m4 <- glm(higher ~ score, data = students, family = "binomial")
 summary(m4)
 ```
 
-Se observa que el AIC (criterio de información de Akaike) menor de los 4 modelos es el correspondiente al hecho de querer cursar estudios superiores
-
+Se observa que el AIC (criterio de información de Akaike) menor de los 4 modelos es el correspondiente al hecho de querer cursar estudios superiores, tal y como se intuía en las gráficas.
 
 ## Conclusiones
 
-Hemos partido de un conjunto de datos de alumnos esudiantes de matemáticas y portugués en los que se recogía información de diferentes aspectos: el sexo de los alumnos, el número de suspensos, si reciben ayuda extra en sus estudios ya sea esta en el colegio, pagada por sus padres, si quieren continuar con sus estudios, y las notas obtenidas durante los tres trimestres.
+Hemos partido de un conjunto de datos de alumnos estudiantes de matemáticas y portugués en los que se recogía información de diferentes aspectos, como por ejemplo: el sexo de los alumnos, el número de suspensos, si reciben ayuda extra en sus estudios ya sea esta en el colegio o pagada por sus padres, si quieren continuar con sus estudios, y las notas obtenidas durante los tres trimestres, entre otros.
 
-Teníamos los datos de dos ficheros csv, uno para los datos de matemáticas y otro para los de portugés. Como primer paso, hemos unido ambos conjuntos en un único data set añadiendo una nueva columna indicando la asignatura de la que provenían. Una vez que los teníamos juntos hemos creado una varibale numérica nueva con la media de todas las notas y otra variable categórica asociando esa nota media a una nota categorizada (A, B, C, D, E y F). Tras comprobar que no existian valores nulos ni vacíos, hemos analizado los outliers que había en cada variable numérica y hemos tratado particularmente cada uno de ellos, teniendo en cuenta la relevancia de los mismos para cada uno de los casos.
+Partimos de dos ficheros csv, uno para los datos de estudiantes de matemáticas y otro para los de portugés. Como primer paso, hemos unido ambos conjuntos en un único data set añadiendo una nueva columna indicando la asignatura de la que provenían. Una vez que los teníamos juntos hemos creado una varibale numérica nueva con la media de todas las notas y otra variable categórica asociando esa nota media a una nota categorizada (A, B, C, D y F). Tras comprobar que no existian valores nulos ni vacíos, hemos analizado los outliers que había en cada variable numérica y hemos tratado particularmente cada uno de ellos, teniendo en cuenta la relevancia de los mismos para cada uno de los casos.
 
-El objetivo de nuestro estudio es saber si existe alguna variable en el juego de datos que pueda ayudarnos a predecir las notas. 
+En primer lugar hemos analizado la correlación entre las notas: vemos que lo están. Es decir, que las notas de cada alumno en cada trimestre están determinadas fuertemente por las obtenidas en los anteriores o, dicho de otra forma, que un estudiante que saca buenas notas en el primer trimestre es muy probable que saque buenas notas en los siguientes.
 
-En primer lugar hemos analizado la correlación entre las notas: vemos que lo están, es decir, que las notas de cada alumno en cada trimestre están determinadas fuertemente por las obtenidas en los anteriores, es decir, que un estudiante que saca buenas notas en el primer trimestre es muy probable que saque buenas notas en los siguientes.
+Hemos analizado también si existe diferencias significativas, utilizando la prueba de hipótesis, entre las notas de los estudiantes en función de su sexo, las horas que dedican semanalmente al estudio o, si reciben algún tipo de ayuda extra en el colegio, en casa o a través de clases particulares. Hemos concluido que es importante dedicar al menos 3 horas semanales al estudio para obtener buenos resultados académicos. También hemos visto que existen diferencias significativas entre los alumnos que reciben ayuda extra por parte del colegio y los que no. En cambio, no existe diferenciación entre las notas de chicos y chicas, ni entre los estudiantes que van a clases particulares, ni los que reciben ayuda por parte de su familia.
 
-Además, hemos usado regresión logística para poder saber si las notas pueden determinar alguna de estas características, hemos intentando averiguar cuál de las variables binarias que tenemos puede estar determinada por las notas obtenidas y vemos que de todas las que hemos analizado, la más determinada es la voluntad del estudiante de continuar con cursos superiores, es decir, que podemos ver que un estudiante que ha obtenido una nota alta es probable que continúe sus estudios. Luego parece lógico pensar que un alumno que quiere continuar estudiando tendrá buenas calificaciones.
+Otro objetivo principal de nuestro estudio era saber si existe alguna variable en el juego de datos que pueda ayudarnos a predecir las notas. Para esto hemos aplicado un modelo de regresión lineal aprovechando la correlación existente entre las variables de notas.
 
+Además, hemos usado regresión logística para poder saber si las notas pueden determinar alguna de las otras características. Hemos intentando averiguar cuál de las variables binarias que tenemos puede estar determinada por las notas obtenidas y vemos que, de todas las que hemos analizado, la más determinada es la voluntad del estudiante de continuar con cursos superiores. Es decir, que podemos ver que un estudiante que ha obtenido una nota alta es muy probable que continúe sus estudios. Luego parece lógico pensar que un alumno que quiere continuar estudiando tendrá buenas calificaciones.
 
 # Recursos
 
