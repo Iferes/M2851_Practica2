@@ -204,7 +204,7 @@ sapply(students, class)
 
 #### ¿Los datos tienen contienen ceros o elementos vacíos? ¿Cómo gestionaríamos cada uno de estos casos?
 
-Primero vamos a comprobar si nuestro juego de datos contiene valores vacíos.
+Primero vamos a comprobar si nuestro juego de datos contiene valores nulos.
 
 ```{r message= TRUE, warning=FALSE}
 # Con datos nulos
@@ -229,7 +229,7 @@ Comprobamos, también, la existencia de valores cero.
 colSums(students==0)
 ```
 
-En este caso, vemos que algunos atributos contienen valores cero. Sin embargo, comprobamos la validez de estos valores.
+En este caso, vemos que algunos atributos contienen valores cero. Sin embargo, estos valores corresponden a variables numéricas y  comprobamos la validez los mismos.
 
 Por último, visualizamos el número de valores únicos por cada atributo, comprobando su correspondencia con los datos.
 
@@ -258,7 +258,7 @@ Hemos encontrado información interesante para el tratamiento de los outliers en
 
 https://www.ugr.es/~fmocan/MATERIALES%20DOCTORADO/Tratamiento%20de%20outliers%20y%20missing.pdf
 
-Variable Age: Vemos que hay un outlier en el valor 22. En este caso consideramos que este valor no debería eliminarse y deberia tratarse como uno más, probablemente el hecho de que haya alumnos de 22 años en el mismos curso que alumnos de 18 años estará relacionado con algunas de las variables que queremos analizar.
+Variable Age: Vemos que hay un outlier en el valor 22. En este caso consideramos que este valor no debería eliminarse y deberia tratarse como uno más, probablemente el hecho de que haya alumnos de 22 años en el mismos curso que alumnos de 18 años estará relacionado con algunas de las variables que queremos analizar, principalmente las notas.
 
 Variables Medu y Fedu: No tienen valores extremos.
 
@@ -268,35 +268,68 @@ Variable traveltime: Vemos que hay un outlier en el valor 4. Es decir, se dan ca
 length(boxplot.stats(students[,c("traveltime")])$out)
 ```
 
+Vemos que tenemos 24 alumnos que tardan más de 3 horas en ir al colegio. El tiempo que tardan los alumnos en llegar al colegio no es una varaiable sobre la que queramos realizar hipótesis, como además, el número total de outliers para este atributo es 24, esto representa el 2% de la muestra así que los eliminamos.
+
+```{r message= FALSE, warning=FALSE}
+students = students[students$traveltime<=3,]
+```
+
+La variable tiempo de estudio studytime vemos que también tiene un outlier en el valor 4. El tiempo de estudio de los alumnos sí que pensamos que es una variable que puede influir en los resultados finales y es una de los atributos que vamos a tener en cuenta en nuestros análisis. No consideramos que el 4 sea un outlier que haya ni que eliminar ni tratar puesto que es un valor aceptable para nuestro estudio, luego con este outlier no hacemos nada.
+
+Lo mismo pasa con la variable que mide los suspensos, los valores que aparecen representados como outliers son precisamente los valores que pueden ser relevantes para nuestro estudio, luego no hacemos nada con ellos 
+
+La variable freetime tiene un outlier en el valor 1, vamos a ver cuántos estudiantes cumplen esta condición. 
+
+```{r message= FALSE, warning=FALSE}
+students[students$freetime==1,]
+```
+
+Son 64 alumnos que tienen muy poco tiempo libre entre semana. Puesto que este valor está relacionado con el tiempo de estudio semanal y con las ayudas extrasescolares que puedan recibir los alumnos decidimos mantenerlos también.
+
+Variable famrel: Tenemos outliers en 1 y 2. Estos valores miden la calidad de las relaciones familiares, entendiendo que estos valores se han obtenido a través de una encuesta a los propios alumnos.  El valor de 1 es tan bajo que pensamos que puede deberse a una manipulación por parte de los alumnos en las respuestas. Consideramos que una forma de tratar estos outliers es reemplazarlos por la moda (más repetida). Los valores de 2 los dejaremos como están puesto que no nos parece que puedan considrarse como outliers. Para calcular la moda utilizamos una tabla de frecuencia para contar el número de veces que se repite cada valor:
+
+```{r message= FALSE, warning=FALSE}
+table(students$famrel)
+```
+
+Vemos que el valor más repetido es el 4, luego sustituimos aquellas columnas que tengan el valor 1 en la columna famrel por 4
+
+```{r message= FALSE, warning=FALSE}
+students$famrel[students$famrel == 1] <- 4
+```
+
+En el caso del consumo diario de alcohol, tenemos un outlier en los valores 4 y 5. Sin embargo no tenemos estos outliers en el consumo del fin de semana. Pensamos por tanto que el hecho de que alumnos consuman mucho alcohol durante los días de diario puede estar relacionado con las notas que obtengan, así que vamos a dejar estos valores.
+
+```{r message= FALSE, warning=FALSE}
+length(boxplot.stats(students[,c("Dalc")])$out)
+```
+
+Para el caso de las ausencias, nos interesa saber cuántos outliers tenemos y qué valores toman para poder analizar cómo tratarlos.
+
 ```{r message= FALSE, warning=FALSE}
 length(boxplot.stats(students[,c("absences")])$out)
+boxplot.stats(students[,c("absences")])$out
 students[students$absences>=40,]
 ```
 
-```{r message= FALSE, warning=FALSE}
-students[students$traveltime>3,]
-```
+A la vista de los resultados vemos que tenemos 54 outliers en las ausencias, y que los valores que toman en estos outliers son  16 16 25 54 18 26 20 18 16 16 56 24 18 28 22 16 18 20 16 21 75 22 30 19 20 38 18 20 22 40 23 16 17 16 16 24 22 16 32 
+Nos parece que los valores que están en un intervalo de (10,30) son admisibles, sin embargo, vemos que hay valores que pasan de 40 que podrían eliminarse.
 
-Tenemos solo 24 registros de alumnos que tardan más de 3 horas (es decir, 4) al colegio. Entendemos esta observación como consecuencia de un acontecimiento extraordinario, luego podemos prescindir de estos valores para nuestro análisis. 
-
-```{r message= FALSE, warning=FALSE}
-# Nos quedamos entonces solo con los datos de alumnos que tardan como máximo 3 horas en llegar a la escuela.
-students = students[students$traveltime<=3,]
-str(students)
-```
-
-Variable studytime: Tenemos outliers en el valor 4. Aunque este valos se sale de la media, la diferencia entre el resto de valores es solo de una hora, luego no nos parece que sea un outlier como tal, asi que vamos a dejarlo como está.
-
-Variable failures: Nos ocurre lo mismo que en el caso anterior, los valores que aparecen señalados como outliers son precisamente objetos fundamentales de nuestro análisis y no debemos tratarlos como tal.
-
-Variable famrel: Tenemos outliers en 1 y 2. Estos valores miden la calidad de las relaciones familiares, entendiendo que estos valores se han obtenido a través de una encuesta a los propios alumnos.  Estos valores tan bajos en algunas calificaciones pueden deberse a una manipulación por parte de los alumnos en las respuestas. Consideramos que una forma de tratar estos outliers es reemplazarlos por la media.
+En total, vamos a contar cuántos datos tenemos para ausencias mayores o iguales que 40
 
 ```{r message= FALSE, warning=FALSE}
-str(students)
+students[students$absences>=40,]
 ```
 
+Vemos que tenemos 4 valores, luego decidimos eliminarlos de nuestro objeto de estudio
 
-Variable freetime: Existe un outlier en el valor 1
+```{r message= FALSE, warning=FALSE}
+students = students[students$absences<40,]
+glimpse(students)
+```
+
+Las columnas relativas a las notas van a ser principalmente las que sean objeto de estudio. Tenemos outliers en notas que son perfectamente posibles, luego no vamos a eliminarlo puesto que pensamos que estos valores afectarán a los estudios e hipótesis que queramos estudiar.
+
 
 ## Análisis de los datos
   
@@ -397,6 +430,13 @@ for (i in 1:ncol(students)) {
 }
 
 ```
+
+Luego a la vista de los resultados obtenidos en los diferentes tests de normalidad, vemos que ninguna de las variables numéricas que tenemos en nuestro juego de datos sigue una distribución normal con respecto al conjunto total de los datos.
+
+Ahora vamos a ver si estas variables numéricas siguen una distribución normal en cada uno de los grupos que hemos separado para realizar nuestro análisis. Es decir, vamos a ver si:
+
+Hemos visto que las notas registradas no siguen una distrubución normal para el conjunto total de los datos pero, seguirán una distribución normal en el conjunto de hombres o de mujeres? ¿Y en el caso de que el tiempo de estudio sea de más de 3 horas o de menos? ¿Y de los alumnos mayores de 16 años o menores? ¿Y si separamos los datos entre alumnos que reciben clases particulares pagadas y no? ¿Y si reciben ayuda extraescolar de familia o en el colegio?
+
 ```{r message= TRUE, warning=FALSE}
 normTest(students.female[,c("score")], "score~female")
 normTest(students.male[,c("score")], "score~male")
@@ -412,28 +452,89 @@ normTest(students.famsup[,c("score")], "score~famsup")
 normTest(students.nofamsup[,c("score")], "score~nofamsup")
 ```
 
+Según los resultados obtenidos vemos que, para los alumnos menores de 16 años, las notas medias sí siguen una distribución normal, y para el caso de los que reciben clases particulares pagadas también así como para aquellos que reciben apoyo educativo adicional . Para el caso de las alumnas femeninas,y de los grupos que reciben o no reciben ayuda extraescolar familiar, el test de Kolmogorov sí indica que las variables de notas medias siguen una distribución normal
+
 > Se utiliza el test de Fligner-Killeen, al no tener normalidad en los datos. 
 > Se utilizaría el test Levene cuando hay normalidad en los datos.
 
-Seguidamente, pasamos a estudiar la homogeneidad de varianzas mediante la aplicación de un test de Fligner-Killeen. 
+Vamos a estudiar ahora la homogeneidad de la varianza para los diferentes grupos que queremos analizar. En primer lugar vamos a analizar la homocedasticidad entre niños y niñas. Vimos en el apartado anterior que esta variable no sigue una distribución normal para estos grupos, luego para realizar nuestro análisis utilizaremos el test de Fligner-Killeen.
 
-```{r message= TRUE, warning=FALSE}
-fligner.test(score ~ age, data = students)
-```
-
-```{r message= TRUE, warning=FALSE}
-leveneTest(score ~ age, data = students)
-```
-
-Dado que ambas pruebas resultan en un p-valor inferior al nivel de significancia (<0.05), se rechaza la hipótesis nula de homocedasticidad y se concluye que la variable count presenta varianzas estadísticamente diferentes para los diferentes grupos de spray.
 
 ```{r message= TRUE, warning=FALSE}
 fligner.test(score ~ sex, data = students)
 ```
 
+Vemos, por tanto, que el valor de p obtenido (p-value) es mayor que 0,05 luego esto indica que no se observa diferencia significativa entre las varianzas por grupos de sexo.
+
+Vamos a aplicar el test de Levene para ver que resultado obtenemos en este caso:
+
 ```{r message= TRUE, warning=FALSE}
 leveneTest(score ~ sex, data = students)
 ```
+
+Para este caso también se cumpliría que el valor de p es mayor de 0,05 luego también indicaría que no existe diferencia significativa entre las varianzas
+
+Veamos ahora cómo se distribuye la varianza para la media escolar entre los grupos de alumnos que reciben clases privadas de las asignaturas. Nuevamente, como estos valores no siguen una distribución normal, utilizaremos el test de Fligner-Killeen
+
+```{r message= TRUE, warning=FALSE}
+fligner.test(score ~ paid, data = students)
+```
+
+Nuevamente, vemos que el valor de p es mayor de 0.05, luego podemos concluir que las varianzas están homogéneamente distrubuidas.
+
+Si aplicamos es test de Levene
+
+```{r message= TRUE, warning=FALSE}
+leveneTest(score ~ paid, data = students)
+```
+
+Vemos también el mismo resultado
+
+Si ahora analizamos las distribuciones atendiendo a si reciben clases estraescolares o ayudas de sus padres, vamos a ver qué obtenemos, nuevamente aplicando el test de Fligner-Killeen por la falta de normalidad en nuestros datos.
+
+```{r message= TRUE, warning=FALSE}
+fligner.test(score ~ schoolsup, data = students)
+```
+
+En este caso vemos que el valor de p obtenido es menor que 0,05 luego vemos que la variable score (que recoge las medias de todas las notas obtenidas) presenta varianzas estadísticamente diferentes para los grupos de alumnos que reciben ayuda extraescolar o no en el colegio.
+
+Vamos a ver qué resultados obtenemos para este caso utilizando el test de Levene
+
+```{r message= TRUE, warning=FALSE}
+leveneTest(score ~ schoolsup, data = students)
+```
+
+Nuevamente el valor es menor que 0.05
+
+Analicemos ahora cómo se distribuye la varianza de las notas medias para los grupos de alumnos que reciben ayuda suplementaria en casa. Nuevamente, usamos el test de Fligner-Killeen
+
+```{r message= TRUE, warning=FALSE}
+fligner.test(score ~ famsup, data = students)
+```
+
+En este caso, se observa que el valor de p (p-value) es mayor de 0,05 luego podemos concluir que las varianzas son homogéneas para estos grupos de estudiantes
+
+Analicemos cómo se distribuye la varianza de las notas medias por los diferentes grupos de edad, entre los alumnos menores de 16 y los mayores de 16
+
+```{r message= TRUE, warning=FALSE}
+a <- students[students$age < 16,"score"]
+b <- students[students$age >= 16,"score"]
+fligner.test(x = list(a,b))
+```
+
+El valor de p que obtenemos es menor que 0.05 lyego rechazamos la hipótesis de homocedasticidad y concluimos que la variable score tiene varianzas estadísticamente diferentes para los alumnos menores de 16 y los mayores de 16.
+
+Por último estudiaremos la distribución de la varianza para los grupos de alumnos que estudian más o menos de 3 horas.
+
+```{r message= TRUE, warning=FALSE}
+a <- students[students$studytime < 3,"score"]
+b <- students[students$studytime >= 3,"score"]
+fligner.test(x = list(a,b))
+```
+
+El valor de p es mayor de 0.05 luego podemos concluir que sí existe homogeneidad de la varianza
+
+Vamos a representar los histogramas de estas variables
 
 ```{r message= TRUE, warning=FALSE}
 plotNormHistogram <- function(data, name) {
@@ -459,6 +560,8 @@ plotNormHistogram(students.female[,c("score")], "score~sex")
 plotNormHistogram(students.male[,c("score")], "score~sex")
 plotNormHistogram(students.studytime[,c("score")], "score~studytime")
 plotNormHistogram(students.nostudytime[,c("score")], "score~studytime")
+plotNormHistogram(students.mayores[,c("score")], "score~mayores")
+plotNormHistogram(students.menores[,c("score")], "score~menores")
 ```
 
 
@@ -479,35 +582,56 @@ Luego, a la vista de estos diagramas, parece intuirse que existe una posible rel
 Como ya hemos visto que estas variables no siguen una distribución normal, vamos a analizar la correlación utilizando el test de Spearman
 
 ```{r message= FALSE, warning=FALSE}
-cor(x = dataStudent$G1, y = log10(dataStudent$G2), method = "spearman")
-cor(x = dataStudent$G1, y = log10(dataStudent$G3), method = "spearman")
-cor(x = dataStudent$G2, y = log10(dataStudent$G3), method = "spearman")
+cor(x = students$G1, y = log10(students$G2), method = "spearman")
+cor(x = students$G1, y = log10(students$G3), method = "spearman")
+cor(x = students$G1, y = log10(students$score), method = "spearman")
+cor(x = students$G2, y = log10(students$G3), method = "spearman")
+cor(x = students$G2, y = log10(students$score), method = "spearman")
+cor(x = students$G3, y = log10(students$score), method = "spearman")
 ```
 
-Vemos que para los 3 casos el grado de correlación es alto (mayor que 0,8). Pero para poder realmente considerar que existe correlación entre las variables debemos calcular la significancia
+Vemos que para los 4 casos el grado de correlación es alto (mayor que 0,8). Pero para poder realmente considerar que existe correlación entre las variables debemos calcular la significancia
 
 ```{r message= FALSE, warning=FALSE}
 # https://rpubs.com/Joaquin_AR/223351
-cor.test(x = dataStudent$G1,
-         y = log10(dataStudent$G2),
+cor.test(x = students$G1,
+         y = log10(students$G2),
          alternative = "two.sided",
          conf.level  = 0.95,
          method      = "spearman")
 
-cor.test(x = dataStudent$G1,
-         y = log10(dataStudent$G3),
+cor.test(x = students$G1,
+         y = log10(students$G3),
          alternative = "two.sided",
          conf.level  = 0.95,
          method      = "spearman")
 
-cor.test(x = dataStudent$G2,
-         y = log10(dataStudent$G3),
+cor.test(x = students$G1,
+         y = log10(students$score),
+         alternative = "two.sided",
+         conf.level  = 0.95,
+         method      = "spearman")
+
+cor.test(x = students$G2,
+         y = log10(students$G3),
+         alternative = "two.sided",
+         conf.level  = 0.95,
+         method      = "spearman")
+
+cor.test(x = students$G2,
+         y = log10(students$score),
+         alternative = "two.sided",
+         conf.level  = 0.95,
+         method      = "spearman")
+
+cor.test(x = students$G3,
+         y = log10(students$score),
          alternative = "two.sided",
          conf.level  = 0.95,
          method      = "spearman")
 ```
 
-Vemos que, para los tres casos, los coeficientes de correlación son significativos puesto que p está próximo a 0 en los tres casos.
+Vemos que, para todos los casos, los coeficientes de correlación son significativos puesto que p está próximo a 0 en los tres casos.
 
 
 ### ¿Las chicas sacan mejores notas que los chicos?
@@ -574,29 +698,82 @@ legend("bottom", c("real", "predicted"), pch = "o", col = c("green", "blue"), tr
 ```
 
 ## Regresión logística
-Imaginemos que queremos realizar un estudio para establecer un modelo que permita calcular cuál es la probabilidad de predecir que un estudiante ha recibido ayuda extraescolar (schoolsup) en función de la nota final que ha obtenido
+Vamos a utilizar regresión logística para intentar averiguar qué variable de las categóricas con las que hemos estado trabajando puede predecirse mejor a partir de la nota media dle curso. Vamos a generar modelos de regresión logística para distintas variables dicotómicas, y vamos a ver cuál de ellos es mejor.
 
-En primer lugar vamos a representar las observaciones para poder intuir gráficamente si la varibale escogida (la nota de G3) está relacionada con la variable respuesta (obtienen ayuda escolar) y puede considerarse que es un buen predictor
+Nos centraremos en las siguientes variables:
+
+- Sexo: podemos predecir el sexo del alumno en función de la nota?
+- SchoolSup: podemos predecir si el alumno ha tenido ayuda en la escuela en función de la nota media?
+- famSup: podemos predecir si el alumno ha tenido ayuda en casa en función de la nota media?
+- higher: Podemos predecir si el alumno querrá seguir estudiando en función de la nota media obtenida?
+
+
+
+
+En primer lugar vamos a representar las observaciones para cada uno de estos casos para poder intuir gráficamente si la varibale escogida (la media de las notas: score) está relacionada con la variable respuesta (obtienen ayuda escolar) y puede considerarse que es un buen predictor
 
 ```{r message= FALSE, warning=FALSE}
+par(mfrow=c(2,2))
+ggplot(data = students, aes(x = sex, y = score, color = sex)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1) +
+  theme_bw() +
+  theme(legend.position = "null")
+
 ggplot(data = students, aes(x = schoolsup, y = score, color = schoolsup)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1) +
+  theme_bw() +
+  theme(legend.position = "null")
+
+ggplot(data = students, aes(x = famsup, y = score, color = famsup)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.1) +
+  theme_bw() +
+  theme(legend.position = "null")
+
+
+ggplot(data = students, aes(x = higher, y = score, color = higher)) +
   geom_boxplot(outlier.shape = NA) +
   geom_jitter(width = 0.1) +
   theme_bw() +
   theme(legend.position = "null")
 ```
 
-Parece que hay diferencias entre la distribución de las notas para alumnos que reciban ayuda.
+A la vista de las gráficas, parece que en el único caso en el que se aprecian diferencias significativas en las notas es en el caso en el que los estudiantes quieren seguir estudiando.
 
-Ahora vamos a generar el modelo
+
+Ahora vamos a generar los modelos para cada una de ellas a ver qué obtenemos
 
 ```{r message= FALSE, warning=FALSE}
-modelo <- glm(higher ~ score, data = students, family = "binomial")
-summary(modelo)
+m1 <- glm(sex ~ score, data = students, family = "binomial")
+summary(m1)
+
+m2 <- glm(schoolsup ~ score, data = students, family = "binomial")
+summary(m2)
+
+m3 <- glm(famsup ~ score, data = students, family = "binomial")
+summary(m3)
+
+
+m4 <- glm(higher ~ score, data = students, family = "binomial")
+summary(m4)
 ```
+
+Se observa que el AIC (criterio de información de Akaike) menor de los 4 modelos es el correspondiente al hecho de querer cursar estudios superiores
 
 
 ## Conclusiones
+
+Hemos partido de un conjunto de datos de alumnos esudiantes de matemáticas y portugués en los que se recogía información de diferentes aspectos: el sexo de los alumnos, el número de suspensos, si reciben ayuda extra en sus estudios ya sea esta en el colegio, pagada por sus padres, si quieren continuar con sus estudios, y las notas obtenidas durante los tres trimestres.
+
+Teníamos los datos de dos ficheros csv, uno para los datos de matemáticas y otro para los de portugés. Como primer paso, hemos unido ambos conjuntos en un único data set añadiendo una nueva columna indicando la asignatura de la que provenían. Una vez que los teníamos juntos hemos creado una varibale numérica nueva con la media de todas las notas y otra variable categórica asociando esa nota media a una nota categorizada (A, B, C, D, E y F). Tras comprobar que no existian valores nulos ni vacíos, hemos analizado los outliers que había en cada variable numérica y hemos tratado particularmente cada uno de ellos, teniendo en cuenta la relevancia de los mismos para cada uno de los casos.
+
+El objetivo de nuestro estudio es saber si existe alguna variable en el juego de datos que pueda ayudarnos a predecir las notas. 
+
+En primer lugar hemos analizado la correlación entre las notas: vemos que lo están, es decir, que las notas de cada alumno en cada trimestre están determinadas fuertemente por las obtenidas en los anteriores, es decir, que un estudiante que saca buenas notas en el primer trimestre es muy probable que saque buenas notas en los siguientes.
+
+Además, hemos usado regresión logística para poder saber si las notas pueden determinar alguna de estas características, hemos intentando averiguar cuál de las variables binarias que tenemos puede estar determinada por las notas obtenidas y vemos que de todas las que hemos analizado, la más determinada es la voluntad del estudiante de continuar con cursos superiores, es decir, que podemos ver que un estudiante que ha obtenido una nota alta es probable que continúe sus estudios. Luego parece lógico pensar que un alumno que quiere continuar estudiando tendrá buenas calificaciones.
 
 
 # Recursos
