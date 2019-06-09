@@ -4,6 +4,10 @@ subtitle: "Práctica 2: Limpieza y validación de los datos"
 author: 'Autores: César Fernández Domínguez, Isabel Fernández Esparza'
 date: "Junio 2019"
 output:
+  pdf_document:
+    highlight: zenburn
+    toc: yes
+  word_document: default
   html_document:
     highlight: default
     number_sections: yes
@@ -12,10 +16,6 @@ output:
     toc_depth: 2
     includes:
       in_header: Practica2-header.html
-  word_document: default
-  pdf_document:
-    highlight: zenburn
-    toc: yes
 ---
 
 
@@ -36,6 +36,7 @@ library(colorspace)
 library(mlbench)
 library(caret)
 library(car)
+library(DescTools)
 ```
 
 ******
@@ -319,7 +320,7 @@ students.female <- students[students$sex == "F",]
 
 Esta agrupación nos podrá servir para intentar responder a la pregunta de si las chicas son, en general, mejores estudiantes que los chicos.
 
-Por otro parte, también podemos agrupar nuestros datos dependiendo de si reciben algún tipo de ayuda en el estudio, por ejemplo: mediante clases particulares, ayuda familiar o soporte extra en el colegio. 
+Por otra parte, también podemos agrupar nuestros datos dependiendo de si reciben algún tipo de ayuda en el estudio, por ejemplo: mediante clases particulares, ayuda familiar o soporte extra en el colegio. 
 
 ```{r message= TRUE, warning=FALSE}
 # Agrupación por si reciben clases particules pagadas o no
@@ -512,13 +513,25 @@ fligner.test(score ~ age, data = students)
 ```
 
 ```{r message= TRUE, warning=FALSE}
-#leveneTest(score ~ age, data = students)
+leveneTest(studytime ~ sex, data = students)
 ```
 
 Dado que ambas pruebas resultan en un p-valor inferior al nivel de significancia (<0.05), se rechaza la hipótesis nula de homocedasticidad y se concluye que la variable count presenta varianzas estadísticamente diferentes para los diferentes grupos de spray.
 
 ```{r message= TRUE, warning=FALSE}
-fligner.test(score ~ sex, data = students)
+fligner.test(score ~ studytime, data = students)
+```
+
+```{r message= TRUE, warning=FALSE}
+fligner.test(score ~ famsup, data = students)
+```
+
+```{r message= TRUE, warning=FALSE}
+fligner.test(score ~ schoolsup, data = students)
+```
+
+```{r message= TRUE, warning=FALSE}
+fligner.test(score ~ paid, data = students)
 ```
 
 ```{r message= TRUE, warning=FALSE}
@@ -601,58 +614,100 @@ Vemos que, para los tres casos, los coeficientes de correlación son significati
 
 ### Pruebas de hipótesis
 
-En esta sección, vamos a intentar responder a algunas de las preguntas que se plantearon en los objetivos iniciales mediante distintas pruebas de hipótesis. Como si las chicas 
+En esta sección, vamos a intentar responder a algunas de las preguntas que se plantearon en los objetivos iniciales mediante una prueba de hipótesis. Puesto que para las variables sobre las que vamos a realizar esta prueba hemos visto que no siguen los criterios de normalidad y homocedasticidad, exigidos para poder aplicar la prueba de t-student, vamos a aplicar pruebas no paramétricas como Wilcoxon (cuando se comparen datos dependientes) o Mann-Whitney (cuando los grupos de datos sean independientes). Podemos aplicar esta prueba utilizando la función "*wilcox.text*".
 
 #### ¿Las chicas sacan mejores notas que los chicos?
 
+En la primera pregunta que nos planteabamos, de si las chicas sacan mejores notas que los chicos, la hipótesis consiste en considerar si las calificaciones obtenidas por las chicas y los chicos tienen idéntica distribución.
+
 ```{r message= TRUE, warning=FALSE}
-t.test(students.male$score, students.female$score, alternative = "less")
+wilcox.test(score ~ sex, data = students)
 ```
+
+En este caso, vemos que p-value > 0.05, por lo tanto debemos decir que las calificaciones obtenidas por los chicas son estadísticamente comparables a las obtenidas por los chicos. Por lo tanto, no podemos decir que las chicas sacan mejores notas que los chicos.
 
 #### ¿Quien más tiempo dedica al estudio saca mejores notas?
 
+En esta ocasión queremos comparar los grupos de estudiantes que estudian durante bastante tiempo semanal y los que dedican menos tiempo al estudio.
+
+Para esto, lo primero que vamos a hacer es crear una nueva variable categórica que nos permita distinguir entre los dos grupos mencionados arriba.
+
 ```{r message= TRUE, warning=FALSE}
-t.test(students.nostudytime$score, students.studytime$score, alternative = "less")
+students$studytime2g<-students$studytime
+students$studytime2g[students$studytime<3] <- "few"
+students$studytime2g[students$studytime>=3] <- "many"
+students$studytime2g <- as.factor(students$studytime2g)
+```
+
+Aplicando, ahora, la prueba sobre estos grupos de estudiantes obtenemos:
+
+```{r message= TRUE, warning=FALSE}
+wilcox.test(score ~ studytime2g, data = students)
+```
+El valor de p-value obtenido es menor de 0.05. Por lo tanto, concluimos que ambos grupos de estudiantes presentan distribuiones muy distintas. Es decir, existe diferencias significativas en la notas obtenidas entre los estudiantes que dedican muchas horas al estudio y las que dedican pocas.
+
+Si ahora comparamos entre los grupos de estudiantes que dedican 3 horas semanales y los que dedican 4 o más, vemos que el valor p-value es igual a 0.683. Es decir, es mayor que 0.05. Por lo tanto, siguen una misma distribución.
+
+```{r message= TRUE, warning=FALSE}
+wilcox.test(score ~ studytime, data = students, subset = studytime %in% c(3, 4))
 ```
 
 #### ¿Aquellos alumnos que van a clases particulares o reciben ayuda por parte de sus padres sacan mejores notas?
 
-```{r message= TRUE, warning=FALSE}
-t.test(students.nopaid$score, students.paid$score, alternative = "less")
-```
+Por último, vamos a aplicar la prueba de hipotésis para intentar responder a la otra pregunta que nos habíamos planteado: ¿hay diferencias en las calificaciones según los estudiantes reciban ayuda extra o no?
+
+La primera prueba la aplicamos sobre los estudiantes que van a clases particulares y los que no:
 
 ```{r message= TRUE, warning=FALSE}
-t.test(students.noschoolsup$score, students.noschoolsup$score, alternative = "less")
+wilcox.test(score ~ paid, data = students)
 ```
+
+En este caso, el valor de *p* es mayor, aunque por muy poco, a 0.05. Por lo tanto, diremos que no existe diferencia estadística, en las notas, entre los alumnos que van a clases particulares y los que no.    
+
+En lo que se refiere a la si reciben ayuda extra por parte del colegio o no, tenemos que...
 
 ```{r message= TRUE, warning=FALSE}
-t.test(students.nofamsup$score, students.famsup$score, alternative = "less")
+wilcox.test(score ~ schoolsup, data = students)
 ```
 
-## Aquellos alumnos que van a clases particulares o reciben ayuda por parte de sus padres sacan mejores notas
+... existe diferencia significativa entre los alumnos que reciben ayuda extra y los que no (tal y como también vimos en el análisis visual de los datos).
+
+Por último, aplicaremos esta prueba también sobre los grupos de estudiantes que son ayudados por su familia en casa y los que no.
+
+```{r message= TRUE, warning=FALSE}
+wilcox.test(score ~ famsup, data = students)
+```
+
+Según el resultado obtenido, no podemos decir que exista diferencia significativa, en las notas finales, entre los estudiantes que son ayudados por su familia en casa y los que no.
 
 ### Modelo lineal
 
-```{r message= TRUE, warning=FALSE}
-smp_siz = floor(0.75*nrow(students))
+Tal y como hemos visto, existe una fuerte correlación entre las distintas variables que se refieren a las calificaciones y la nota final. Por lo tanto, vamos a utilizar estas variables para obtener un modelo lineal que nos permita predecir las notas de los estudiantes a partir de algunas de las otras variables.
 
-set.seed(123)   # set seed to ensure you always have same random numbers generated
-train_ind = sample(seq_len(nrow(students)),size = smp_siz)  # Randomly identifies the rows equal to sample size ( defined in previous instruction) from  all the rows of Smarket dataset and stores the row number in train_ind
-train = students[train_ind,] #creates the training dataset with row numbers stored in train_ind
-test = students[-train_ind,]  # creates the test dataset excluding the row numbers mentioned in train_ind
+En primer lugar, dividiremos nuestros datos entre un grupo de entrenamiento y otro de prueba, que nos permitirá evaluar la precisión de las predicciones realizadas por nuestro modelo.
+
+```{r message= TRUE, warning=FALSE}
+sample_size = floor(0.90*nrow(students)) # 90% train - 10% test
+train_idx = sample(seq_len(nrow(students)),size = sample_size) 
+train = students[train_idx,] 
+test = students[-train_idx,]
 ```
+
+Definiremos varios modelos utilizando distintas variables relacionadas con la calificación final (*score*) para finalmente elegir aquel que mejores resultados nos dé.
 
 ```{r message= TRUE, warning=FALSE}
 
 # Generación de varios modelos
-modelo1 <- lm(score ~ G1, data = train)
+modelo1 <- lm(score ~ G1 + G2 + G3, data = train)
 modelo2 <- lm(score ~ G1 + G2, data = train)
-modelo3 <- lm(score ~ G1 + G2 + G3, data = train)
-modelo4 <- lm(score ~ G1 + G3, data = train)
-modelo5 <- lm(score ~ G1 + G3 + studytime, data = train)
-modelo6 <- lm(score ~ studytime + sex + absences, data = train)
-modelo7 <- lm(score ~ studytime + paid, data = train)
-modelo8 <- lm(score ~ G1 + G3 + studytime + paid, data = train)
+modelo3 <- lm(score ~ G1 + G3, data = train)
+modelo4 <- lm(score ~ G1, data = train)
+modelo5 <- lm(score ~ G2, data = train)
+modelo6 <- lm(score ~ G3, data = train)
+modelo7 <- lm(score ~ G1 + G3 + studytime, data = train)
+modelo8 <- lm(score ~ G2 + studytime + schoolsup, data = train)
+modelo9 <- lm(score ~ studytime + sex + absences, data = train)
+modelo10 <- lm(score ~ studytime + paid, data = train)
 
 tabla.coeficientes <- matrix(
     c(1, summary(modelo1)$r.squared,
@@ -662,21 +717,30 @@ tabla.coeficientes <- matrix(
       5, summary(modelo5)$r.squared,
       6, summary(modelo6)$r.squared,
       7, summary(modelo7)$r.squared,
-      8, summary(modelo8)$r.squared),
+      8, summary(modelo8)$r.squared,
+      9, summary(modelo9)$r.squared,
+      10, summary(modelo10)$r.squared),
     ncol = 2, byrow = TRUE)
 colnames(tabla.coeficientes) <- c("Modelo", "R^2")
 tabla.coeficientes
 ```
-```{r message= TRUE, warning=FALSE}
-summary(modelo1)
-```
+
+Esta claro, según confirmamos por los resultados obtenidos, que si utilizamos las notas de los tres trimestres para predecir la calificación final el resultado será exacto, ya que esta nota se obtiene a partir de un calculo directo sobre las otras tres (la media). Ignorando este caso, analizamos el resultado obtenido para los otros modelos, en los cuales se quiere predecir la nota final utilizando alguna otra variable o conjunto de variables.
+
+De la tabla anterior, elegimos el modelo 8, que nos permitiría predecir la nota final a partir de la nota del segundo trimestre y de evaluar las variables *studytime* y *schoolsup*. Utilizando este modelo y el conjunto de datos de test que habiamos reservado podemos predecir las notas finales para estos estudiantes.
+
 ```{r message= TRUE, warning=FALSE}
 y_predict = predict(modelo8, test)
 ```
+
+En la siguiente gráfica mostramos el error cometido en cada una de las predicciones:
+
 ```{r message= TRUE, warning=FALSE}
-plot(test$score, col = "green", xlab = "", ylab = "", ylim = range(0,15)) 
-points(y_predict, col = "blue") 
-legend("bottom", c("real", "predicted"), pch = "o", col = c("green", "blue"), trace = TRUE)
+data = data.frame(G2=test$score, pred=y_predict, se=abs(y_predict - test$score)) 
+data$sample <- seq.int(nrow(data))
+ggplot(data, aes(x=sample, y=pred)) + 
+    geom_errorbar(aes(ymin=pred-se, ymax=pred+se)) +
+    geom_point()
 ```
 
 ## Regresión logística
