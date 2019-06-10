@@ -29,8 +29,8 @@ Este proyecto se distinguen los siguientes ficheros:
 - Practica2.html - Versión HTML del documento anterior
 - Practica2.docx - Versión DOCX
 - Practica2-header.html - Cabecera HTML para la versión HTML
-- data/students-mat.csv - Fichero de datos relativos a estudiantes de la asignatura de matemáticas
-- data/students-por.csv - Fichero de datos relativos a estudiantes de la asignatura de portugués
+- data/student-mat.csv - Fichero de datos relativos a estudiantes de la asignatura de matemáticas
+- data/student-por.csv - Fichero de datos relativos a estudiantes de la asignatura de portugués
 - data/student-total.csv - Fichero con los datos finales que utilizaremos para el análisis 
 
 ## Contribuciones
