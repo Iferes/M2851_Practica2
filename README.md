@@ -32,6 +32,14 @@ Este proyecto se distinguen los siguientes ficheros:
 - data/students-mat.csv - Fichero de datos relativos a estudiantes de la asignatura de matemáticas
 - data/students-por.csv - Fichero de datos relativos a estudiantes de la asignatura de portugués
 
+## Contribuciones
+
+| Contribuciones               | Firma                              |
+| ---------------------------- | ---------------------------------- |
+| Investigación previa         | César Fernández e Isabel Fernández |
+| Redacción de las respuestas  | César Fernández e Isabel Fernández |
+| Desarrollo código            | César Fernández e Isabel Fernández |
+
 ## Recursos
 
 Los siguientes recursos son de utilidad para la realización de la práctica:
